@@ -40,137 +40,137 @@ SPHERE_DEFAULTS = {
         # General manufacturing / industrial production
         "investment_years": 1,
         "operating_years": 5,
-        "base_revenue": 1_000_000,
+        "base_revenue": 1.0,
         "revenue_growth_rate": 12,
         "cogs_pct": 35,
         "opex_pct": 20,
-        "annual_capex": 80_000,
-        "intangibles_investment": 30_000,
+        "annual_capex": 0.08,
+        "intangibles_investment": 0.03,
         "useful_life_years": 10,
         "amortization_period": 5,
         "dso": 30,
         "dpo": 30,
         "dio": 45,
         "tax_rate": 25,
-        "initial_debt": 300_000,
+        "initial_debt": 0.3,
         "interest_rate": 6,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 500_000,
+        "initial_equity": 0.5,
         "annual_equity_injection": 0,
         "dividends_pct": 20,
         "wacc": 10,
-        "initial_cash": 100_000,
-        "initial_investment": 100_000,  # Year-0 seed; investment-phase FCFs capture build costs
+        "initial_cash": 0.1,
+        "initial_investment": 0.1,  # Year-0 seed; investment-phase FCFs capture build costs
     },
     "toll-road": {
         # Concession-based infrastructure; near-cash tolls, heavy debt, long life
         "investment_years": 3,
         "operating_years": 12,
-        "base_revenue": 5_000_000,
+        "base_revenue": 5.0,
         "revenue_growth_rate": 4,
         "cogs_pct": 10,
         "opex_pct": 25,
-        "annual_capex": 400_000,
-        "intangibles_investment": 150_000,   # concession rights
+        "annual_capex": 0.4,
+        "intangibles_investment": 0.15,      # concession rights
         "useful_life_years": 30,
         "amortization_period": 20,
         "dso": 3,                            # tolls collected on the spot
         "dpo": 45,
         "dio": 0,                            # no inventory
         "tax_rate": 20,
-        "initial_debt": 8_000_000,
+        "initial_debt": 8.0,
         "interest_rate": 5,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 3_000_000,
+        "initial_equity": 3.0,
         "annual_equity_injection": 0,
         "dividends_pct": 40,
         "wacc": 7,
-        "initial_cash": 500_000,
-        "initial_investment": 500_000,
+        "initial_cash": 0.5,
+        "initial_investment": 0.5,
     },
     "agriculture": {
         # Farm / agribusiness; long harvest cycles, seasonal inventory, lower tax
         "investment_years": 2,
         "operating_years": 10,
-        "base_revenue": 800_000,
+        "base_revenue": 0.8,
         "revenue_growth_rate": 5,
         "cogs_pct": 55,
         "opex_pct": 15,
-        "annual_capex": 60_000,
-        "intangibles_investment": 10_000,    # land-use permits
+        "annual_capex": 0.06,
+        "intangibles_investment": 0.01,      # land-use permits
         "useful_life_years": 15,
         "amortization_period": 10,
         "dso": 30,
         "dpo": 30,
         "dio": 120,                          # long harvest & storage cycle
         "tax_rate": 15,
-        "initial_debt": 350_000,
+        "initial_debt": 0.35,
         "interest_rate": 6,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 300_000,
+        "initial_equity": 0.3,
         "annual_equity_injection": 0,
         "dividends_pct": 20,
         "wacc": 9,
-        "initial_cash": 100_000,
-        "initial_investment": 100_000,
+        "initial_cash": 0.1,
+        "initial_investment": 0.1,
     },
     "mining": {
         # Extractive industry; Year-0 capex already embedded in opening NFA;
         # ongoing sustaining capex is low, making annual FCF strongly positive.
         "investment_years": 3,
         "operating_years": 12,
-        "base_revenue": 8_000_000,
+        "base_revenue": 8.0,
         "revenue_growth_rate": 3,
         "cogs_pct": 50,
         "opex_pct": 18,
-        "annual_capex": 500_000,             # sustaining capex only
-        "intangibles_investment": 100_000,   # exploration licence renewals
+        "annual_capex": 0.5,                 # sustaining capex only
+        "intangibles_investment": 0.1,       # exploration licence renewals
         "useful_life_years": 20,
         "amortization_period": 10,
         "dso": 15,
         "dpo": 45,
         "dio": 30,
         "tax_rate": 30,
-        "initial_debt": 3_000_000,
+        "initial_debt": 3.0,
         "interest_rate": 6,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 3_000_000,
+        "initial_equity": 3.0,
         "annual_equity_injection": 0,
         "dividends_pct": 30,
         "wacc": 11,
-        "initial_cash": 1_000_000,
-        "initial_investment": 1_000_000,
+        "initial_cash": 1.0,
+        "initial_investment": 1.0,
     },
     "port": {
         # Port / terminal; stable throughput fees; WACC reflects infrastructure risk
         "investment_years": 4,
         "operating_years": 16,
-        "base_revenue": 3_000_000,
+        "base_revenue": 3.0,
         "revenue_growth_rate": 5,
         "cogs_pct": 10,
         "opex_pct": 25,
-        "annual_capex": 300_000,
-        "intangibles_investment": 50_000,    # concession / operating licences
+        "annual_capex": 0.3,
+        "intangibles_investment": 0.05,      # concession / operating licences
         "useful_life_years": 25,
         "amortization_period": 15,
         "dso": 30,
         "dpo": 60,
         "dio": 10,
         "tax_rate": 20,
-        "initial_debt": 6_000_000,
+        "initial_debt": 6.0,
         "interest_rate": 5,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 3_500_000,
+        "initial_equity": 3.5,
         "annual_equity_injection": 0,
         "dividends_pct": 35,
         "wacc": 6,                           # infrastructure WACC
-        "initial_cash": 500_000,
-        "initial_investment": 500_000,
+        "initial_cash": 0.5,
+        "initial_investment": 0.5,
     },
 }
 
@@ -193,7 +193,7 @@ def fmt_currency(v):
     if v is None:
         return "N/A"
     sign = "-" if v < 0 else ""
-    return f"{sign}₽{abs(v):,.0f}"
+    return f"{sign}₽{abs(v):,.2f}M"
 
 
 def fmt_pct(v):
@@ -269,8 +269,8 @@ def build_inputs_tab():
             dbc.Col([
                 section_header("📈 Revenue"),
                 dbc.Row([
-                    input_group("Base Revenue (Year 1, ₽)", "inp-base-revenue",
-                                DEFAULTS["base_revenue"], step=10000),
+                    input_group("Base Revenue (Year 1, ₽M)", "inp-base-revenue",
+                                DEFAULTS["base_revenue"], step=0.01),
                     input_group("Revenue Growth Rate", "inp-growth-rate",
                                 DEFAULTS["revenue_growth_rate"], suffix="%", step=0.5),
                 ]),
@@ -283,10 +283,10 @@ def build_inputs_tab():
                 ]),
                 section_header("🏗️ Fixed Assets & Intangibles"),
                 dbc.Row([
-                    input_group("Annual CapEx (₽)", "inp-annual-capex",
-                                DEFAULTS["annual_capex"], step=5000),
-                    input_group("Annual Intangibles Investment (₽)", "inp-intangibles",
-                                DEFAULTS["intangibles_investment"], step=5000),
+                    input_group("Annual CapEx (₽M)", "inp-annual-capex",
+                                DEFAULTS["annual_capex"], step=0.01),
+                    input_group("Annual Intangibles Investment (₽M)", "inp-intangibles",
+                                DEFAULTS["intangibles_investment"], step=0.01),
                     input_group("Useful Life (years)", "inp-useful-life",
                                 DEFAULTS["useful_life_years"], min_val=1, step=1),
                     input_group("Amortization Period (years)", "inp-amort-period",
@@ -308,12 +308,12 @@ def build_inputs_tab():
                 ]),
                 section_header("🏦 Debt Financing"),
                 dbc.Row([
-                    input_group("Initial Debt (₽)", "inp-initial-debt",
-                                DEFAULTS["initial_debt"], step=10000),
+                    input_group("Initial Debt (₽M)", "inp-initial-debt",
+                                DEFAULTS["initial_debt"], step=0.01),
                     input_group("Interest Rate", "inp-interest-rate",
                                 DEFAULTS["interest_rate"], suffix="%", step=0.25),
-                    input_group("New Annual Debt Issuance (₽)", "inp-new-debt",
-                                DEFAULTS["new_debt_annual"], step=10000),
+                    input_group("New Annual Debt Issuance (₽M)", "inp-new-debt",
+                                DEFAULTS["new_debt_annual"], step=0.01),
                     dbc.Col([
                         dbc.Label("Repayment Schedule", className="fw-semibold small"),
                         dcc.Dropdown(
@@ -329,20 +329,20 @@ def build_inputs_tab():
                 ]),
                 section_header("💼 Equity Financing"),
                 dbc.Row([
-                    input_group("Initial Equity (₽)", "inp-initial-equity",
-                                DEFAULTS["initial_equity"], step=10000),
-                    input_group("Annual Equity Injection (₽)", "inp-equity-injection",
-                                DEFAULTS["annual_equity_injection"], step=10000),
+                    input_group("Initial Equity (₽M)", "inp-initial-equity",
+                                DEFAULTS["initial_equity"], step=0.01),
+                    input_group("Annual Equity Injection (₽M)", "inp-equity-injection",
+                                DEFAULTS["annual_equity_injection"], step=0.01),
                     input_group("Dividend Payout %", "inp-dividends-pct",
                                 DEFAULTS["dividends_pct"], suffix="%", step=1),
                 ]),
                 section_header("🎯 Valuation"),
                 dbc.Row([
                     input_group("WACC", "inp-wacc", DEFAULTS["wacc"], suffix="%", step=0.25),
-                    input_group("Initial Investment (₽)", "inp-initial-investment",
-                                DEFAULTS["initial_investment"], step=10000),
-                    input_group("Initial Cash Balance (₽)", "inp-initial-cash",
-                                DEFAULTS["initial_cash"], step=10000),
+                    input_group("Initial Investment (₽M)", "inp-initial-investment",
+                                DEFAULTS["initial_investment"], step=0.01),
+                    input_group("Initial Cash Balance (₽M)", "inp-initial-cash",
+                                DEFAULTS["initial_cash"], step=0.01),
                 ]),
                 section_header("📅 Projection Horizon"),
                 dbc.Row([
@@ -652,99 +652,99 @@ def update_all_tabs(results):
 
     # ── Revenues ──
     rev_items = {
-        "Revenue (₽)": results.get("revenue", []),
+        "Revenue (₽M)": results.get("revenue", []),
     }
     rev_tab = tab_layout(tbl(rev_items, "tbl-revenue"), revenue_chart(results))
 
     # ── OpEx ──
     opex_items = {
-        "Revenue (₽)": results.get("revenue", []),
-        "COGS (₽)": results.get("cogs", []),
-        "Gross Profit (₽)": results.get("gross_profit", []),
-        "OpEx (₽)": results.get("opex", []),
-        "EBITDA (₽)": results.get("ebitda", []),
+        "Revenue (₽M)": results.get("revenue", []),
+        "COGS (₽M)": results.get("cogs", []),
+        "Gross Profit (₽M)": results.get("gross_profit", []),
+        "OpEx (₽M)": results.get("opex", []),
+        "EBITDA (₽M)": results.get("ebitda", []),
     }
     opex_tab = tab_layout(tbl(opex_items, "tbl-opex"), opex_chart(results))
 
     # ── FA ──
     fa_items = {
-        "Annual CapEx (₽)": results.get("capex", []),
-        "Intangibles Investment (₽)": results.get("intangibles_investment", []),
-        "Depreciation (₽)": results.get("depreciation", []),
-        "Amortization (₽)": results.get("amortization", []),
-        "Net Fixed Assets (₽)": results.get("net_fixed_assets", []),
-        "Net Intangibles (₽)": results.get("net_intangibles", []),
+        "Annual CapEx (₽M)": results.get("capex", []),
+        "Intangibles Investment (₽M)": results.get("intangibles_investment", []),
+        "Depreciation (₽M)": results.get("depreciation", []),
+        "Amortization (₽M)": results.get("amortization", []),
+        "Net Fixed Assets (₽M)": results.get("net_fixed_assets", []),
+        "Net Intangibles (₽M)": results.get("net_intangibles", []),
     }
     fa_tab = tab_layout(tbl(fa_items, "tbl-fa"), fa_chart(results))
 
     # ── Working Capital ──
     wc_items = {
-        "Accounts Receivable (₽)": results.get("accounts_receivable", []),
-        "Inventory (₽)": results.get("inventory", []),
-        "Accounts Payable (₽)": results.get("accounts_payable", []),
-        "Net Working Capital (₽)": results.get("net_working_capital", []),
-        "Change in NWC (₽)": results.get("change_in_wc", []),
+        "Accounts Receivable (₽M)": results.get("accounts_receivable", []),
+        "Inventory (₽M)": results.get("inventory", []),
+        "Accounts Payable (₽M)": results.get("accounts_payable", []),
+        "Net Working Capital (₽M)": results.get("net_working_capital", []),
+        "Change in NWC (₽M)": results.get("change_in_wc", []),
     }
     wc_tab = tab_layout(tbl(wc_items, "tbl-wc"), wc_chart(results))
 
     # ── Taxes ──
     tax_items = {
-        "EBITDA (₽)": results.get("ebitda", []),
-        "Depreciation (₽)": results.get("depreciation", []),
-        "Amortization (₽)": results.get("amortization", []),
-        "EBIT (₽)": results.get("ebit", []),
-        "Interest Expense (₽)": results.get("interest_expense", []),
-        "EBT (₽)": results.get("ebt", []),
-        "Tax (₽)": results.get("tax", []),
-        "NOPAT (₽)": results.get("nopat", []),
-        "Net Income (₽)": results.get("net_income", []),
+        "EBITDA (₽M)": results.get("ebitda", []),
+        "Depreciation (₽M)": results.get("depreciation", []),
+        "Amortization (₽M)": results.get("amortization", []),
+        "EBIT (₽M)": results.get("ebit", []),
+        "Interest Expense (₽M)": results.get("interest_expense", []),
+        "EBT (₽M)": results.get("ebt", []),
+        "Tax (₽M)": results.get("tax", []),
+        "NOPAT (₽M)": results.get("nopat", []),
+        "Net Income (₽M)": results.get("net_income", []),
     }
     tax_tab = tab_layout(tbl(tax_items, "tbl-tax"), tax_chart(results))
 
     # ── Debt ──
     debt_items = {
-        "Debt Balance (₽)": results.get("debt_balance", []),
-        "Interest Expense (₽)": results.get("interest_expense", []),
-        "Principal Repayment (₽)": results.get("principal_repayment", []),
-        "New Debt Issuance (₽)": results.get("new_debt_issuance", []),
+        "Debt Balance (₽M)": results.get("debt_balance", []),
+        "Interest Expense (₽M)": results.get("interest_expense", []),
+        "Principal Repayment (₽M)": results.get("principal_repayment", []),
+        "New Debt Issuance (₽M)": results.get("new_debt_issuance", []),
     }
     debt_tab = tab_layout(tbl(debt_items, "tbl-debt"), debt_chart(results))
 
     # ── Equity ──
     equity_items = {
-        "Paid-in Capital (₽)": results.get("paid_in_capital", []),
-        "Equity Injections (₽)": results.get("equity_injections", []),
-        "Retained Earnings (₽)": results.get("retained_earnings", []),
-        "Dividends (₽)": results.get("dividends", []),
-        "Cumulative Equity (₽)": results.get("cumulative_equity", []),
+        "Paid-in Capital (₽M)": results.get("paid_in_capital", []),
+        "Equity Injections (₽M)": results.get("equity_injections", []),
+        "Retained Earnings (₽M)": results.get("retained_earnings", []),
+        "Dividends (₽M)": results.get("dividends", []),
+        "Cumulative Equity (₽M)": results.get("cumulative_equity", []),
     }
     equity_tab = tab_layout(tbl(equity_items, "tbl-equity"), equity_chart(results))
 
     # ── P&L ──
     pnl_items = {
-        "Revenue (₽)": results.get("revenue", []),
-        "COGS (₽)": results.get("cogs", []),
-        "Gross Profit (₽)": results.get("gross_profit", []),
-        "OpEx (₽)": results.get("opex", []),
-        "EBITDA (₽)": results.get("ebitda", []),
-        "Depreciation (₽)": results.get("depreciation", []),
-        "Amortization (₽)": results.get("amortization", []),
-        "EBIT (₽)": results.get("ebit", []),
-        "Interest Expense (₽)": results.get("interest_expense", []),
-        "EBT (₽)": results.get("ebt", []),
-        "Tax (₽)": results.get("tax", []),
-        "Net Income (₽)": results.get("net_income", []),
+        "Revenue (₽M)": results.get("revenue", []),
+        "COGS (₽M)": results.get("cogs", []),
+        "Gross Profit (₽M)": results.get("gross_profit", []),
+        "OpEx (₽M)": results.get("opex", []),
+        "EBITDA (₽M)": results.get("ebitda", []),
+        "Depreciation (₽M)": results.get("depreciation", []),
+        "Amortization (₽M)": results.get("amortization", []),
+        "EBIT (₽M)": results.get("ebit", []),
+        "Interest Expense (₽M)": results.get("interest_expense", []),
+        "EBT (₽M)": results.get("ebt", []),
+        "Tax (₽M)": results.get("tax", []),
+        "Net Income (₽M)": results.get("net_income", []),
     }
     pnl_tab = tab_layout(tbl(pnl_items, "tbl-pnl"), pnl_chart(results))
 
     # ── Cash Flow ──
     cf_items = {
-        "Operating CF (₽)": results.get("operating_cf", []),
-        "Investing CF (₽)": results.get("investing_cf", []),
-        "Financing CF (₽)": results.get("financing_cf", []),
-        "Free Cash Flow (₽)": results.get("free_cash_flow", []),
-        "Net Cash Flow (₽)": results.get("net_cash_flow", []),
-        "Cash Balance (₽)": results.get("cash_balance", []),
+        "Operating CF (₽M)": results.get("operating_cf", []),
+        "Investing CF (₽M)": results.get("investing_cf", []),
+        "Financing CF (₽M)": results.get("financing_cf", []),
+        "Free Cash Flow (₽M)": results.get("free_cash_flow", []),
+        "Net Cash Flow (₽M)": results.get("net_cash_flow", []),
+        "Cash Balance (₽M)": results.get("cash_balance", []),
     }
     cf_tab = tab_layout(tbl(cf_items, "tbl-cf"), cashflow_chart(results))
 
@@ -754,23 +754,23 @@ def update_all_tabs(results):
     all_balanced = all(balance_checks)
     balance_indicator = dbc.Alert(
         "✅ Balance Sheet balances for all years." if all_balanced
-        else f"⚠️ Balance Sheet imbalance detected. Max diff: ₽{max(abs(d) for d in balance_diffs):,.2f}",
+        else f"⚠️ Balance Sheet imbalance detected. Max diff: ₽{max(abs(d) for d in balance_diffs):,.4f}M",
         color="success" if all_balanced else "warning",
         className="mb-2 py-2",
     )
     bs_items = {
-        "Cash (₽)": results.get("cash_balance", []),
-        "Accounts Receivable (₽)": results.get("accounts_receivable", []),
-        "Inventory (₽)": results.get("inventory", []),
-        "Net Fixed Assets (₽)": results.get("net_fixed_assets", []),
-        "Net Intangibles (₽)": results.get("net_intangibles", []),
-        "Total Assets (₽)": results.get("bs_total_assets", []),
-        "Accounts Payable (₽)": results.get("accounts_payable", []),
-        "Debt Balance (₽)": results.get("debt_balance", []),
-        "Total Liabilities (₽)": results.get("bs_total_liabilities", []),
-        "Paid-in Capital (₽)": results.get("paid_in_capital", []),
-        "Retained Earnings (₽)": results.get("retained_earnings", []),
-        "Total Equity (₽)": results.get("bs_total_equity", []),
+        "Cash (₽M)": results.get("cash_balance", []),
+        "Accounts Receivable (₽M)": results.get("accounts_receivable", []),
+        "Inventory (₽M)": results.get("inventory", []),
+        "Net Fixed Assets (₽M)": results.get("net_fixed_assets", []),
+        "Net Intangibles (₽M)": results.get("net_intangibles", []),
+        "Total Assets (₽M)": results.get("bs_total_assets", []),
+        "Accounts Payable (₽M)": results.get("accounts_payable", []),
+        "Debt Balance (₽M)": results.get("debt_balance", []),
+        "Total Liabilities (₽M)": results.get("bs_total_liabilities", []),
+        "Paid-in Capital (₽M)": results.get("paid_in_capital", []),
+        "Retained Earnings (₽M)": results.get("retained_earnings", []),
+        "Total Equity (₽M)": results.get("bs_total_equity", []),
     }
     bs_tab = dbc.Container([
         balance_indicator,
