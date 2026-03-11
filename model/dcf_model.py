@@ -28,8 +28,14 @@ class DCFModel:
         self.evaluation = Evaluation()
 
     def run(self, inputs: dict) -> dict:
-        period = int(inputs.get("projection_years", 5))
-        results = {"projection_years": period}
+        investment_years = int(inputs.get("investment_years", 0))
+        operating_years = int(inputs.get("operating_years", 5))
+        period = investment_years + operating_years
+        results = {
+            "projection_years": period,
+            "investment_years": investment_years,
+            "operating_years": operating_years,
+        }
 
         def merged(extra=None):
             base = {**inputs, **results}

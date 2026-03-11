@@ -22,7 +22,37 @@ LAYOUT_BASE = dict(
 
 def _years(results: dict):
     period = results.get("projection_years", 5)
-    return list(range(period + 1)), [f"Y{t}" for t in range(period + 1)]
+    inv = results.get("investment_years", 0)
+    years = list(range(period + 1))
+    labels = []
+    for t in years:
+        if t == 0:
+            labels.append("Base")
+        elif t <= inv:
+            labels.append(f"Inv {t}")
+        else:
+            labels.append(f"Op {t - inv}")
+    return years, labels
+
+
+def _inv_shapes(results: dict, labels: list) -> list:
+    """Return a list of vrect shapes that shade the investment phase columns."""
+    inv = results.get("investment_years", 0)
+    if inv == 0:
+        return []
+    # x-axis is categorical: shade from "Base" up to and including the last Inv label
+    last_inv_label = f"Inv {inv}"
+    return [
+        dict(
+            type="rect",
+            xref="paper", yref="paper",
+            x0=0, x1=inv / (len(labels) - 1) if len(labels) > 1 else 0,
+            y0=0, y1=1,
+            fillcolor="rgba(230,126,34,0.08)",
+            line_width=0,
+            layer="below",
+        )
+    ]
 
 
 # ─────────────────────────────────────────────
@@ -32,18 +62,22 @@ def revenue_chart(results: dict) -> go.Figure:
     years, labels = _years(results)
     revenue = results.get("revenue", [0] * len(years))
     growth_rate = float(results.get("revenue_growth_rate", 0))
+    inv = results.get("investment_years", 0)
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
+    bar_colors = [
+        ORANGE_COLOR if (t > 0 and t <= inv) else TEAL_COLORS[0]
+        for t in years
+    ]
     fig.add_trace(
         go.Bar(
-            x=labels, y=revenue, name="Revenue", marker_color=TEAL_COLORS[0],
+            x=labels, y=revenue, name="Revenue", marker_color=bar_colors,
             text=[f"{v:,.0f}" for v in revenue], textposition="outside",
         ),
         secondary_y=False,
     )
 
-    # Growth rate line (constant for now)
     growth_vals = [growth_rate if t > 0 else 0 for t in years]
     fig.add_trace(
         go.Scatter(
@@ -54,7 +88,11 @@ def revenue_chart(results: dict) -> go.Figure:
         secondary_y=True,
     )
 
-    fig.update_layout(title="Revenue & Growth Rate", **LAYOUT_BASE)
+    fig.update_layout(
+        title="Revenue & Growth Rate"
+              + (f"  |  <span style='color:{ORANGE_COLOR}'>▓ Investment Phase</span>" if inv else ""),
+        **LAYOUT_BASE,
+    )
     fig.update_yaxes(title_text="Revenue ($)", secondary_y=False)
     fig.update_yaxes(title_text="Growth Rate (%)", secondary_y=True, ticksuffix="%")
     return fig

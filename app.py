@@ -38,7 +38,8 @@ dcf_model = DCFModel()
 SPHERE_DEFAULTS = {
     "production": {
         # General manufacturing / industrial production
-        "projection_years": 5,
+        "investment_years": 1,
+        "operating_years": 5,
         "base_revenue": 1_000_000,
         "revenue_growth_rate": 12,
         "cogs_pct": 35,
@@ -60,11 +61,12 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 20,
         "wacc": 10,
         "initial_cash": 100_000,
-        "initial_investment": 700_000,
+        "initial_investment": 100_000,  # Year-0 seed; investment-phase FCFs capture build costs
     },
     "toll-road": {
         # Concession-based infrastructure; near-cash tolls, heavy debt, long life
-        "projection_years": 15,
+        "investment_years": 3,
+        "operating_years": 12,
         "base_revenue": 5_000_000,
         "revenue_growth_rate": 4,
         "cogs_pct": 10,
@@ -86,11 +88,12 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 40,
         "wacc": 7,
         "initial_cash": 500_000,
-        "initial_investment": 10_500_000,
+        "initial_investment": 500_000,
     },
     "agriculture": {
         # Farm / agribusiness; long harvest cycles, seasonal inventory, lower tax
-        "projection_years": 10,
+        "investment_years": 2,
+        "operating_years": 10,
         "base_revenue": 800_000,
         "revenue_growth_rate": 5,
         "cogs_pct": 55,
@@ -112,12 +115,13 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 20,
         "wacc": 9,
         "initial_cash": 100_000,
-        "initial_investment": 550_000,
+        "initial_investment": 100_000,
     },
     "mining": {
         # Extractive industry; Year-0 capex already embedded in opening NFA;
         # ongoing sustaining capex is low, making annual FCF strongly positive.
-        "projection_years": 12,
+        "investment_years": 3,
+        "operating_years": 12,
         "base_revenue": 8_000_000,
         "revenue_growth_rate": 3,
         "cogs_pct": 50,
@@ -139,11 +143,12 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 30,
         "wacc": 11,
         "initial_cash": 1_000_000,
-        "initial_investment": 5_000_000,     # = equity + debt − cash → BS balances
+        "initial_investment": 1_000_000,
     },
     "port": {
         # Port / terminal; stable throughput fees; WACC reflects infrastructure risk
-        "projection_years": 20,
+        "investment_years": 4,
+        "operating_years": 16,
         "base_revenue": 3_000_000,
         "revenue_growth_rate": 5,
         "cogs_pct": 10,
@@ -165,7 +170,7 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 35,
         "wacc": 6,                           # infrastructure WACC
         "initial_cash": 500_000,
-        "initial_investment": 9_000_000,
+        "initial_investment": 500_000,
     },
 }
 
@@ -342,15 +347,53 @@ def build_inputs_tab():
                 section_header("📅 Projection Horizon"),
                 dbc.Row([
                     dbc.Col([
-                        dbc.Label("Projection Years (3–15)", className="fw-semibold small"),
-                        dcc.Slider(
-                            id="inp-projection-years",
-                            min=3, max=15, step=1,
-                            value=DEFAULTS["projection_years"],
-                            marks={i: str(i) for i in range(3, 16)},
-                            tooltip={"placement": "bottom", "always_visible": True},
+                        dbc.Label(
+                            [html.Span("🏗️ ", style={"color": "#e67e22"}),
+                             "Investment Phase (years)"],
+                            className="fw-semibold small",
                         ),
-                    ], md=12, className="mb-3"),
+                        dbc.InputGroup([
+                            dbc.Input(
+                                id="inp-investment-years",
+                                type="number",
+                                value=DEFAULTS["investment_years"],
+                                min=0, max=15, step=1,
+                                debounce=True,
+                            ),
+                            dbc.InputGroupText("yrs"),
+                        ], size="sm"),
+                        dbc.FormText("Pre-revenue construction / ramp-up period"),
+                    ], md=6, className="mb-3"),
+                    dbc.Col([
+                        dbc.Label(
+                            [html.Span("📈 ", style={"color": "#27ae60"}),
+                             "Operating Phase (years)"],
+                            className="fw-semibold small",
+                        ),
+                        dbc.InputGroup([
+                            dbc.Input(
+                                id="inp-operating-years",
+                                type="number",
+                                value=DEFAULTS["operating_years"],
+                                min=1, max=30, step=1,
+                                debounce=True,
+                            ),
+                            dbc.InputGroupText("yrs"),
+                        ], size="sm"),
+                        dbc.FormText("Revenue-generating operations period"),
+                    ], md=4, className="mb-3"),
+                    dbc.Col([
+                        dbc.Label("Total", className="fw-semibold small text-muted"),
+                        html.Div(
+                            dbc.Badge(
+                                id="badge-total-years",
+                                children=f"{DEFAULTS['investment_years'] + DEFAULTS['operating_years']} yrs",
+                                color="secondary",
+                                className="fs-6 px-3 py-2",
+                            ),
+                            className="mt-1",
+                        ),
+                    ], md=2, className="mb-3"),
                 ]),
             ], md=6),
         ]),
@@ -437,7 +480,18 @@ app.layout = html.Div([
 # Callback: Sphere → Populate Inputs
 # ─────────────────────────────────────────────
 @callback(
-    Output("inp-projection-years", "value"),
+    Output("badge-total-years", "children"),
+    Input("inp-investment-years", "value"),
+    Input("inp-operating-years", "value"),
+)
+def update_total_years_badge(inv, op):
+    total = (inv or 0) + (op or 0)
+    return f"{total} yrs"
+
+
+@callback(
+    Output("inp-investment-years", "value"),
+    Output("inp-operating-years", "value"),
     Output("inp-base-revenue", "value"),
     Output("inp-growth-rate", "value"),
     Output("inp-cogs-pct", "value"),
@@ -465,7 +519,8 @@ app.layout = html.Div([
 def update_sphere_inputs(sphere):
     d = SPHERE_DEFAULTS.get(sphere, DEFAULTS)
     return (
-        d["projection_years"],
+        d["investment_years"],
+        d["operating_years"],
         d["base_revenue"],
         d["revenue_growth_rate"],
         d["cogs_pct"],
@@ -498,7 +553,8 @@ def update_sphere_inputs(sphere):
     Output("store-results", "data"),
     Output("run-status", "children"),
     Input("btn-run", "n_clicks"),
-    State("inp-projection-years", "value"),
+    State("inp-investment-years", "value"),
+    State("inp-operating-years", "value"),
     State("inp-base-revenue", "value"),
     State("inp-growth-rate", "value"),
     State("inp-cogs-pct", "value"),
@@ -525,7 +581,8 @@ def update_sphere_inputs(sphere):
 )
 def run_model(n_clicks, *args):
     keys = [
-        "projection_years", "base_revenue", "revenue_growth_rate",
+        "investment_years", "operating_years",
+        "base_revenue", "revenue_growth_rate",
         "cogs_pct", "opex_pct", "annual_capex", "intangibles_investment",
         "useful_life_years", "amortization_period",
         "dso", "dpo", "dio", "tax_rate",
@@ -588,13 +645,16 @@ def update_all_tabs(results):
         return [placeholder] * 11
 
     period = results.get("projection_years", 5)
+    inv = results.get("investment_years", 0)
+
+    def tbl(items, tid):
+        return build_table(items, period, tid, investment_years=inv)
 
     # ── Revenues ──
     rev_items = {
         "Revenue ($)": results.get("revenue", []),
     }
-    rev_tab = tab_layout(build_table(rev_items, period, "tbl-revenue"),
-                          revenue_chart(results))
+    rev_tab = tab_layout(tbl(rev_items, "tbl-revenue"), revenue_chart(results))
 
     # ── OpEx ──
     opex_items = {
@@ -604,7 +664,7 @@ def update_all_tabs(results):
         "OpEx ($)": results.get("opex", []),
         "EBITDA ($)": results.get("ebitda", []),
     }
-    opex_tab = tab_layout(build_table(opex_items, period, "tbl-opex"), opex_chart(results))
+    opex_tab = tab_layout(tbl(opex_items, "tbl-opex"), opex_chart(results))
 
     # ── FA ──
     fa_items = {
@@ -615,7 +675,7 @@ def update_all_tabs(results):
         "Net Fixed Assets ($)": results.get("net_fixed_assets", []),
         "Net Intangibles ($)": results.get("net_intangibles", []),
     }
-    fa_tab = tab_layout(build_table(fa_items, period, "tbl-fa"), fa_chart(results))
+    fa_tab = tab_layout(tbl(fa_items, "tbl-fa"), fa_chart(results))
 
     # ── Working Capital ──
     wc_items = {
@@ -625,7 +685,7 @@ def update_all_tabs(results):
         "Net Working Capital ($)": results.get("net_working_capital", []),
         "Change in NWC ($)": results.get("change_in_wc", []),
     }
-    wc_tab = tab_layout(build_table(wc_items, period, "tbl-wc"), wc_chart(results))
+    wc_tab = tab_layout(tbl(wc_items, "tbl-wc"), wc_chart(results))
 
     # ── Taxes ──
     tax_items = {
@@ -639,7 +699,7 @@ def update_all_tabs(results):
         "NOPAT ($)": results.get("nopat", []),
         "Net Income ($)": results.get("net_income", []),
     }
-    tax_tab = tab_layout(build_table(tax_items, period, "tbl-tax"), tax_chart(results))
+    tax_tab = tab_layout(tbl(tax_items, "tbl-tax"), tax_chart(results))
 
     # ── Debt ──
     debt_items = {
@@ -648,7 +708,7 @@ def update_all_tabs(results):
         "Principal Repayment ($)": results.get("principal_repayment", []),
         "New Debt Issuance ($)": results.get("new_debt_issuance", []),
     }
-    debt_tab = tab_layout(build_table(debt_items, period, "tbl-debt"), debt_chart(results))
+    debt_tab = tab_layout(tbl(debt_items, "tbl-debt"), debt_chart(results))
 
     # ── Equity ──
     equity_items = {
@@ -658,8 +718,7 @@ def update_all_tabs(results):
         "Dividends ($)": results.get("dividends", []),
         "Cumulative Equity ($)": results.get("cumulative_equity", []),
     }
-    equity_tab = tab_layout(build_table(equity_items, period, "tbl-equity"),
-                             equity_chart(results))
+    equity_tab = tab_layout(tbl(equity_items, "tbl-equity"), equity_chart(results))
 
     # ── P&L ──
     pnl_items = {
@@ -676,7 +735,7 @@ def update_all_tabs(results):
         "Tax ($)": results.get("tax", []),
         "Net Income ($)": results.get("net_income", []),
     }
-    pnl_tab = tab_layout(build_table(pnl_items, period, "tbl-pnl"), pnl_chart(results))
+    pnl_tab = tab_layout(tbl(pnl_items, "tbl-pnl"), pnl_chart(results))
 
     # ── Cash Flow ──
     cf_items = {
@@ -687,7 +746,7 @@ def update_all_tabs(results):
         "Net Cash Flow ($)": results.get("net_cash_flow", []),
         "Cash Balance ($)": results.get("cash_balance", []),
     }
-    cf_tab = tab_layout(build_table(cf_items, period, "tbl-cf"), cashflow_chart(results))
+    cf_tab = tab_layout(tbl(cf_items, "tbl-cf"), cashflow_chart(results))
 
     # ── Balance Sheet ──
     balance_checks = results.get("bs_balance_check", [True] * (period + 1))
@@ -715,7 +774,7 @@ def update_all_tabs(results):
     }
     bs_tab = dbc.Container([
         balance_indicator,
-        html.Div(build_table(bs_items, period, "tbl-bs"), className="mb-3"),
+        html.Div(tbl(bs_items, "tbl-bs"), className="mb-3"),
         dcc.Graph(figure=balance_sheet_chart(results)),
     ], fluid=True, className="py-3")
 
