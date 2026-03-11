@@ -33,33 +33,152 @@ server = app.server
 dcf_model = DCFModel()
 
 # ─────────────────────────────────────────────
-# Default Inputs (realistic example company)
+# Default Inputs per Project Sphere
 # ─────────────────────────────────────────────
-DEFAULTS = {
-    "projection_years": 5,
-    "base_revenue": 1_000_000,
-    "revenue_growth_rate": 12,
-    "cogs_pct": 35,
-    "opex_pct": 20,
-    "annual_capex": 80_000,
-    "intangibles_investment": 30_000,
-    "useful_life_years": 10,
-    "amortization_period": 5,
-    "dso": 30,
-    "dpo": 30,
-    "dio": 30,
-    "tax_rate": 25,
-    "initial_debt": 300_000,
-    "interest_rate": 6,
-    "repayment_type": "Equal",
-    "new_debt_annual": 0,
-    "initial_equity": 500_000,
-    "annual_equity_injection": 0,
-    "dividends_pct": 20,
-    "wacc": 10,
-    "initial_cash": 100_000,
-    "initial_investment": 700_000,
+SPHERE_DEFAULTS = {
+    "production": {
+        # General manufacturing / industrial production
+        "projection_years": 5,
+        "base_revenue": 1_000_000,
+        "revenue_growth_rate": 12,
+        "cogs_pct": 35,
+        "opex_pct": 20,
+        "annual_capex": 80_000,
+        "intangibles_investment": 30_000,
+        "useful_life_years": 10,
+        "amortization_period": 5,
+        "dso": 30,
+        "dpo": 30,
+        "dio": 45,
+        "tax_rate": 25,
+        "initial_debt": 300_000,
+        "interest_rate": 6,
+        "repayment_type": "Equal",
+        "new_debt_annual": 0,
+        "initial_equity": 500_000,
+        "annual_equity_injection": 0,
+        "dividends_pct": 20,
+        "wacc": 10,
+        "initial_cash": 100_000,
+        "initial_investment": 700_000,
+    },
+    "toll-road": {
+        # Concession-based infrastructure; near-cash tolls, heavy debt, long life
+        "projection_years": 15,
+        "base_revenue": 5_000_000,
+        "revenue_growth_rate": 4,
+        "cogs_pct": 10,
+        "opex_pct": 25,
+        "annual_capex": 400_000,
+        "intangibles_investment": 150_000,   # concession rights
+        "useful_life_years": 30,
+        "amortization_period": 20,
+        "dso": 3,                            # tolls collected on the spot
+        "dpo": 45,
+        "dio": 0,                            # no inventory
+        "tax_rate": 20,
+        "initial_debt": 8_000_000,
+        "interest_rate": 5,
+        "repayment_type": "Equal",
+        "new_debt_annual": 0,
+        "initial_equity": 3_000_000,
+        "annual_equity_injection": 0,
+        "dividends_pct": 40,
+        "wacc": 7,
+        "initial_cash": 500_000,
+        "initial_investment": 10_500_000,
+    },
+    "agriculture": {
+        # Farm / agribusiness; long harvest cycles, seasonal inventory, lower tax
+        "projection_years": 10,
+        "base_revenue": 800_000,
+        "revenue_growth_rate": 5,
+        "cogs_pct": 55,
+        "opex_pct": 15,
+        "annual_capex": 60_000,
+        "intangibles_investment": 10_000,    # land-use permits
+        "useful_life_years": 15,
+        "amortization_period": 10,
+        "dso": 30,
+        "dpo": 30,
+        "dio": 120,                          # long harvest & storage cycle
+        "tax_rate": 15,
+        "initial_debt": 350_000,
+        "interest_rate": 6,
+        "repayment_type": "Equal",
+        "new_debt_annual": 0,
+        "initial_equity": 300_000,
+        "annual_equity_injection": 0,
+        "dividends_pct": 20,
+        "wacc": 9,
+        "initial_cash": 100_000,
+        "initial_investment": 550_000,
+    },
+    "mining": {
+        # Extractive industry; Year-0 capex already embedded in opening NFA;
+        # ongoing sustaining capex is low, making annual FCF strongly positive.
+        "projection_years": 12,
+        "base_revenue": 8_000_000,
+        "revenue_growth_rate": 3,
+        "cogs_pct": 50,
+        "opex_pct": 18,
+        "annual_capex": 500_000,             # sustaining capex only
+        "intangibles_investment": 100_000,   # exploration licence renewals
+        "useful_life_years": 20,
+        "amortization_period": 10,
+        "dso": 15,
+        "dpo": 45,
+        "dio": 30,
+        "tax_rate": 30,
+        "initial_debt": 3_000_000,
+        "interest_rate": 6,
+        "repayment_type": "Equal",
+        "new_debt_annual": 0,
+        "initial_equity": 3_000_000,
+        "annual_equity_injection": 0,
+        "dividends_pct": 30,
+        "wacc": 11,
+        "initial_cash": 1_000_000,
+        "initial_investment": 5_000_000,     # = equity + debt − cash → BS balances
+    },
+    "port": {
+        # Port / terminal; stable throughput fees; WACC reflects infrastructure risk
+        "projection_years": 20,
+        "base_revenue": 3_000_000,
+        "revenue_growth_rate": 5,
+        "cogs_pct": 10,
+        "opex_pct": 25,
+        "annual_capex": 300_000,
+        "intangibles_investment": 50_000,    # concession / operating licences
+        "useful_life_years": 25,
+        "amortization_period": 15,
+        "dso": 30,
+        "dpo": 60,
+        "dio": 10,
+        "tax_rate": 20,
+        "initial_debt": 6_000_000,
+        "interest_rate": 5,
+        "repayment_type": "Equal",
+        "new_debt_annual": 0,
+        "initial_equity": 3_500_000,
+        "annual_equity_injection": 0,
+        "dividends_pct": 35,
+        "wacc": 6,                           # infrastructure WACC
+        "initial_cash": 500_000,
+        "initial_investment": 9_000_000,
+    },
 }
+
+# Alias used by any code that still references DEFAULTS
+DEFAULTS = SPHERE_DEFAULTS["production"]
+
+SPHERE_OPTIONS = [
+    {"label": "🏭  Production",   "value": "production"},
+    {"label": "🛣️  Toll Road",    "value": "toll-road"},
+    {"label": "🌾  Agriculture",  "value": "agriculture"},
+    {"label": "⛏️  Mining",       "value": "mining"},
+    {"label": "🚢  Port",         "value": "port"},
+]
 
 
 # ─────────────────────────────────────────────
@@ -115,7 +234,32 @@ def section_header(title):
 # Tab 1 – Inputs Panel
 # ─────────────────────────────────────────────
 def build_inputs_tab():
+    sphere_card = dbc.Card(
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Project Sphere", className="fw-bold fs-6 mb-2"),
+                    html.Div(
+                        dbc.RadioItems(
+                            id="inp-sphere",
+                            options=SPHERE_OPTIONS,
+                            value="production",
+                            inline=True,
+                            inputClassName="btn-check",
+                            labelClassName="btn btn-outline-primary me-2 mb-1",
+                            labelCheckedClassName="btn btn-primary me-2 mb-1",
+                        ),
+                        className="d-flex flex-wrap",
+                    ),
+                ]),
+            ]),
+        ]),
+        className="mb-4 border-primary",
+        style={"borderWidth": "2px"},
+    )
+
     return dbc.Container([
+        sphere_card,
         dbc.Row([
             dbc.Col([
                 section_header("📈 Revenue"),
@@ -287,6 +431,64 @@ app.layout = html.Div([
     dcc.Store(id="store-inputs"),
     TABS,
 ])
+
+
+# ─────────────────────────────────────────────
+# Callback: Sphere → Populate Inputs
+# ─────────────────────────────────────────────
+@callback(
+    Output("inp-projection-years", "value"),
+    Output("inp-base-revenue", "value"),
+    Output("inp-growth-rate", "value"),
+    Output("inp-cogs-pct", "value"),
+    Output("inp-opex-pct", "value"),
+    Output("inp-annual-capex", "value"),
+    Output("inp-intangibles", "value"),
+    Output("inp-useful-life", "value"),
+    Output("inp-amort-period", "value"),
+    Output("inp-dso", "value"),
+    Output("inp-dpo", "value"),
+    Output("inp-dio", "value"),
+    Output("inp-tax-rate", "value"),
+    Output("inp-initial-debt", "value"),
+    Output("inp-interest-rate", "value"),
+    Output("inp-repayment-type", "value"),
+    Output("inp-new-debt", "value"),
+    Output("inp-initial-equity", "value"),
+    Output("inp-equity-injection", "value"),
+    Output("inp-dividends-pct", "value"),
+    Output("inp-wacc", "value"),
+    Output("inp-initial-investment", "value"),
+    Output("inp-initial-cash", "value"),
+    Input("inp-sphere", "value"),
+)
+def update_sphere_inputs(sphere):
+    d = SPHERE_DEFAULTS.get(sphere, DEFAULTS)
+    return (
+        d["projection_years"],
+        d["base_revenue"],
+        d["revenue_growth_rate"],
+        d["cogs_pct"],
+        d["opex_pct"],
+        d["annual_capex"],
+        d["intangibles_investment"],
+        d["useful_life_years"],
+        d["amortization_period"],
+        d["dso"],
+        d["dpo"],
+        d["dio"],
+        d["tax_rate"],
+        d["initial_debt"],
+        d["interest_rate"],
+        d["repayment_type"],
+        d["new_debt_annual"],
+        d["initial_equity"],
+        d["annual_equity_injection"],
+        d["dividends_pct"],
+        d["wacc"],
+        d["initial_investment"],
+        d["initial_cash"],
+    )
 
 
 # ─────────────────────────────────────────────
