@@ -193,7 +193,7 @@ def fmt_currency(v):
     if v is None:
         return "N/A"
     sign = "-" if v < 0 else ""
-    return f"{sign}${abs(v):,.0f}"
+    return f"{sign}₽{abs(v):,.0f}"
 
 
 def fmt_pct(v):
@@ -269,7 +269,7 @@ def build_inputs_tab():
             dbc.Col([
                 section_header("📈 Revenue"),
                 dbc.Row([
-                    input_group("Base Revenue (Year 1, $)", "inp-base-revenue",
+                    input_group("Base Revenue (Year 1, ₽)", "inp-base-revenue",
                                 DEFAULTS["base_revenue"], step=10000),
                     input_group("Revenue Growth Rate", "inp-growth-rate",
                                 DEFAULTS["revenue_growth_rate"], suffix="%", step=0.5),
@@ -283,9 +283,9 @@ def build_inputs_tab():
                 ]),
                 section_header("🏗️ Fixed Assets & Intangibles"),
                 dbc.Row([
-                    input_group("Annual CapEx ($)", "inp-annual-capex",
+                    input_group("Annual CapEx (₽)", "inp-annual-capex",
                                 DEFAULTS["annual_capex"], step=5000),
-                    input_group("Annual Intangibles Investment ($)", "inp-intangibles",
+                    input_group("Annual Intangibles Investment (₽)", "inp-intangibles",
                                 DEFAULTS["intangibles_investment"], step=5000),
                     input_group("Useful Life (years)", "inp-useful-life",
                                 DEFAULTS["useful_life_years"], min_val=1, step=1),
@@ -308,11 +308,11 @@ def build_inputs_tab():
                 ]),
                 section_header("🏦 Debt Financing"),
                 dbc.Row([
-                    input_group("Initial Debt ($)", "inp-initial-debt",
+                    input_group("Initial Debt (₽)", "inp-initial-debt",
                                 DEFAULTS["initial_debt"], step=10000),
                     input_group("Interest Rate", "inp-interest-rate",
                                 DEFAULTS["interest_rate"], suffix="%", step=0.25),
-                    input_group("New Annual Debt Issuance ($)", "inp-new-debt",
+                    input_group("New Annual Debt Issuance (₽)", "inp-new-debt",
                                 DEFAULTS["new_debt_annual"], step=10000),
                     dbc.Col([
                         dbc.Label("Repayment Schedule", className="fw-semibold small"),
@@ -329,9 +329,9 @@ def build_inputs_tab():
                 ]),
                 section_header("💼 Equity Financing"),
                 dbc.Row([
-                    input_group("Initial Equity ($)", "inp-initial-equity",
+                    input_group("Initial Equity (₽)", "inp-initial-equity",
                                 DEFAULTS["initial_equity"], step=10000),
-                    input_group("Annual Equity Injection ($)", "inp-equity-injection",
+                    input_group("Annual Equity Injection (₽)", "inp-equity-injection",
                                 DEFAULTS["annual_equity_injection"], step=10000),
                     input_group("Dividend Payout %", "inp-dividends-pct",
                                 DEFAULTS["dividends_pct"], suffix="%", step=1),
@@ -339,9 +339,9 @@ def build_inputs_tab():
                 section_header("🎯 Valuation"),
                 dbc.Row([
                     input_group("WACC", "inp-wacc", DEFAULTS["wacc"], suffix="%", step=0.25),
-                    input_group("Initial Investment ($)", "inp-initial-investment",
+                    input_group("Initial Investment (₽)", "inp-initial-investment",
                                 DEFAULTS["initial_investment"], step=10000),
-                    input_group("Initial Cash Balance ($)", "inp-initial-cash",
+                    input_group("Initial Cash Balance (₽)", "inp-initial-cash",
                                 DEFAULTS["initial_cash"], step=10000),
                 ]),
                 section_header("📅 Projection Horizon"),
@@ -652,99 +652,99 @@ def update_all_tabs(results):
 
     # ── Revenues ──
     rev_items = {
-        "Revenue ($)": results.get("revenue", []),
+        "Revenue (₽)": results.get("revenue", []),
     }
     rev_tab = tab_layout(tbl(rev_items, "tbl-revenue"), revenue_chart(results))
 
     # ── OpEx ──
     opex_items = {
-        "Revenue ($)": results.get("revenue", []),
-        "COGS ($)": results.get("cogs", []),
-        "Gross Profit ($)": results.get("gross_profit", []),
-        "OpEx ($)": results.get("opex", []),
-        "EBITDA ($)": results.get("ebitda", []),
+        "Revenue (₽)": results.get("revenue", []),
+        "COGS (₽)": results.get("cogs", []),
+        "Gross Profit (₽)": results.get("gross_profit", []),
+        "OpEx (₽)": results.get("opex", []),
+        "EBITDA (₽)": results.get("ebitda", []),
     }
     opex_tab = tab_layout(tbl(opex_items, "tbl-opex"), opex_chart(results))
 
     # ── FA ──
     fa_items = {
-        "Annual CapEx ($)": results.get("capex", []),
-        "Intangibles Investment ($)": results.get("intangibles_investment", []),
-        "Depreciation ($)": results.get("depreciation", []),
-        "Amortization ($)": results.get("amortization", []),
-        "Net Fixed Assets ($)": results.get("net_fixed_assets", []),
-        "Net Intangibles ($)": results.get("net_intangibles", []),
+        "Annual CapEx (₽)": results.get("capex", []),
+        "Intangibles Investment (₽)": results.get("intangibles_investment", []),
+        "Depreciation (₽)": results.get("depreciation", []),
+        "Amortization (₽)": results.get("amortization", []),
+        "Net Fixed Assets (₽)": results.get("net_fixed_assets", []),
+        "Net Intangibles (₽)": results.get("net_intangibles", []),
     }
     fa_tab = tab_layout(tbl(fa_items, "tbl-fa"), fa_chart(results))
 
     # ── Working Capital ──
     wc_items = {
-        "Accounts Receivable ($)": results.get("accounts_receivable", []),
-        "Inventory ($)": results.get("inventory", []),
-        "Accounts Payable ($)": results.get("accounts_payable", []),
-        "Net Working Capital ($)": results.get("net_working_capital", []),
-        "Change in NWC ($)": results.get("change_in_wc", []),
+        "Accounts Receivable (₽)": results.get("accounts_receivable", []),
+        "Inventory (₽)": results.get("inventory", []),
+        "Accounts Payable (₽)": results.get("accounts_payable", []),
+        "Net Working Capital (₽)": results.get("net_working_capital", []),
+        "Change in NWC (₽)": results.get("change_in_wc", []),
     }
     wc_tab = tab_layout(tbl(wc_items, "tbl-wc"), wc_chart(results))
 
     # ── Taxes ──
     tax_items = {
-        "EBITDA ($)": results.get("ebitda", []),
-        "Depreciation ($)": results.get("depreciation", []),
-        "Amortization ($)": results.get("amortization", []),
-        "EBIT ($)": results.get("ebit", []),
-        "Interest Expense ($)": results.get("interest_expense", []),
-        "EBT ($)": results.get("ebt", []),
-        "Tax ($)": results.get("tax", []),
-        "NOPAT ($)": results.get("nopat", []),
-        "Net Income ($)": results.get("net_income", []),
+        "EBITDA (₽)": results.get("ebitda", []),
+        "Depreciation (₽)": results.get("depreciation", []),
+        "Amortization (₽)": results.get("amortization", []),
+        "EBIT (₽)": results.get("ebit", []),
+        "Interest Expense (₽)": results.get("interest_expense", []),
+        "EBT (₽)": results.get("ebt", []),
+        "Tax (₽)": results.get("tax", []),
+        "NOPAT (₽)": results.get("nopat", []),
+        "Net Income (₽)": results.get("net_income", []),
     }
     tax_tab = tab_layout(tbl(tax_items, "tbl-tax"), tax_chart(results))
 
     # ── Debt ──
     debt_items = {
-        "Debt Balance ($)": results.get("debt_balance", []),
-        "Interest Expense ($)": results.get("interest_expense", []),
-        "Principal Repayment ($)": results.get("principal_repayment", []),
-        "New Debt Issuance ($)": results.get("new_debt_issuance", []),
+        "Debt Balance (₽)": results.get("debt_balance", []),
+        "Interest Expense (₽)": results.get("interest_expense", []),
+        "Principal Repayment (₽)": results.get("principal_repayment", []),
+        "New Debt Issuance (₽)": results.get("new_debt_issuance", []),
     }
     debt_tab = tab_layout(tbl(debt_items, "tbl-debt"), debt_chart(results))
 
     # ── Equity ──
     equity_items = {
-        "Paid-in Capital ($)": results.get("paid_in_capital", []),
-        "Equity Injections ($)": results.get("equity_injections", []),
-        "Retained Earnings ($)": results.get("retained_earnings", []),
-        "Dividends ($)": results.get("dividends", []),
-        "Cumulative Equity ($)": results.get("cumulative_equity", []),
+        "Paid-in Capital (₽)": results.get("paid_in_capital", []),
+        "Equity Injections (₽)": results.get("equity_injections", []),
+        "Retained Earnings (₽)": results.get("retained_earnings", []),
+        "Dividends (₽)": results.get("dividends", []),
+        "Cumulative Equity (₽)": results.get("cumulative_equity", []),
     }
     equity_tab = tab_layout(tbl(equity_items, "tbl-equity"), equity_chart(results))
 
     # ── P&L ──
     pnl_items = {
-        "Revenue ($)": results.get("revenue", []),
-        "COGS ($)": results.get("cogs", []),
-        "Gross Profit ($)": results.get("gross_profit", []),
-        "OpEx ($)": results.get("opex", []),
-        "EBITDA ($)": results.get("ebitda", []),
-        "Depreciation ($)": results.get("depreciation", []),
-        "Amortization ($)": results.get("amortization", []),
-        "EBIT ($)": results.get("ebit", []),
-        "Interest Expense ($)": results.get("interest_expense", []),
-        "EBT ($)": results.get("ebt", []),
-        "Tax ($)": results.get("tax", []),
-        "Net Income ($)": results.get("net_income", []),
+        "Revenue (₽)": results.get("revenue", []),
+        "COGS (₽)": results.get("cogs", []),
+        "Gross Profit (₽)": results.get("gross_profit", []),
+        "OpEx (₽)": results.get("opex", []),
+        "EBITDA (₽)": results.get("ebitda", []),
+        "Depreciation (₽)": results.get("depreciation", []),
+        "Amortization (₽)": results.get("amortization", []),
+        "EBIT (₽)": results.get("ebit", []),
+        "Interest Expense (₽)": results.get("interest_expense", []),
+        "EBT (₽)": results.get("ebt", []),
+        "Tax (₽)": results.get("tax", []),
+        "Net Income (₽)": results.get("net_income", []),
     }
     pnl_tab = tab_layout(tbl(pnl_items, "tbl-pnl"), pnl_chart(results))
 
     # ── Cash Flow ──
     cf_items = {
-        "Operating CF ($)": results.get("operating_cf", []),
-        "Investing CF ($)": results.get("investing_cf", []),
-        "Financing CF ($)": results.get("financing_cf", []),
-        "Free Cash Flow ($)": results.get("free_cash_flow", []),
-        "Net Cash Flow ($)": results.get("net_cash_flow", []),
-        "Cash Balance ($)": results.get("cash_balance", []),
+        "Operating CF (₽)": results.get("operating_cf", []),
+        "Investing CF (₽)": results.get("investing_cf", []),
+        "Financing CF (₽)": results.get("financing_cf", []),
+        "Free Cash Flow (₽)": results.get("free_cash_flow", []),
+        "Net Cash Flow (₽)": results.get("net_cash_flow", []),
+        "Cash Balance (₽)": results.get("cash_balance", []),
     }
     cf_tab = tab_layout(tbl(cf_items, "tbl-cf"), cashflow_chart(results))
 
@@ -754,23 +754,23 @@ def update_all_tabs(results):
     all_balanced = all(balance_checks)
     balance_indicator = dbc.Alert(
         "✅ Balance Sheet balances for all years." if all_balanced
-        else f"⚠️ Balance Sheet imbalance detected. Max diff: ${max(abs(d) for d in balance_diffs):,.2f}",
+        else f"⚠️ Balance Sheet imbalance detected. Max diff: ₽{max(abs(d) for d in balance_diffs):,.2f}",
         color="success" if all_balanced else "warning",
         className="mb-2 py-2",
     )
     bs_items = {
-        "Cash ($)": results.get("cash_balance", []),
-        "Accounts Receivable ($)": results.get("accounts_receivable", []),
-        "Inventory ($)": results.get("inventory", []),
-        "Net Fixed Assets ($)": results.get("net_fixed_assets", []),
-        "Net Intangibles ($)": results.get("net_intangibles", []),
-        "Total Assets ($)": results.get("bs_total_assets", []),
-        "Accounts Payable ($)": results.get("accounts_payable", []),
-        "Debt Balance ($)": results.get("debt_balance", []),
-        "Total Liabilities ($)": results.get("bs_total_liabilities", []),
-        "Paid-in Capital ($)": results.get("paid_in_capital", []),
-        "Retained Earnings ($)": results.get("retained_earnings", []),
-        "Total Equity ($)": results.get("bs_total_equity", []),
+        "Cash (₽)": results.get("cash_balance", []),
+        "Accounts Receivable (₽)": results.get("accounts_receivable", []),
+        "Inventory (₽)": results.get("inventory", []),
+        "Net Fixed Assets (₽)": results.get("net_fixed_assets", []),
+        "Net Intangibles (₽)": results.get("net_intangibles", []),
+        "Total Assets (₽)": results.get("bs_total_assets", []),
+        "Accounts Payable (₽)": results.get("accounts_payable", []),
+        "Debt Balance (₽)": results.get("debt_balance", []),
+        "Total Liabilities (₽)": results.get("bs_total_liabilities", []),
+        "Paid-in Capital (₽)": results.get("paid_in_capital", []),
+        "Retained Earnings (₽)": results.get("retained_earnings", []),
+        "Total Equity (₽)": results.get("bs_total_equity", []),
     }
     bs_tab = dbc.Container([
         balance_indicator,

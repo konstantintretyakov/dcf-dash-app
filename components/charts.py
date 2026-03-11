@@ -93,7 +93,7 @@ def revenue_chart(results: dict) -> go.Figure:
               + (f"  |  <span style='color:{ORANGE_COLOR}'>▓ Investment Phase</span>" if inv else ""),
         **LAYOUT_BASE,
     )
-    fig.update_yaxes(title_text="Revenue ($)", secondary_y=False)
+    fig.update_yaxes(title_text="Revenue (₽)", secondary_y=False)
     fig.update_yaxes(title_text="Growth Rate (%)", secondary_y=True, ticksuffix="%")
     return fig
 
@@ -133,7 +133,7 @@ def opex_chart(results: dict) -> go.Figure:
     fig.update_layout(
         title="Operating Expenses (Stacked)", barmode="stack", **LAYOUT_BASE
     )
-    fig.update_yaxes(title_text="Amount ($)", secondary_y=False)
+    fig.update_yaxes(title_text="Amount (₽)", secondary_y=False)
     fig.update_yaxes(title_text="EBITDA Margin (%)", secondary_y=True, ticksuffix="%")
     return fig
 
@@ -159,7 +159,7 @@ def fa_chart(results: dict) -> go.Figure:
                              mode="lines+markers", line=dict(color=ORANGE_COLOR, width=2, dash="dot")))
 
     fig.update_layout(title="Fixed Assets & Intangibles Over Time", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Amount ($)")
+    fig.update_yaxes(title_text="Amount (₽)")
     return fig
 
 
@@ -182,7 +182,7 @@ def wc_chart(results: dict) -> go.Figure:
                              mode="lines+markers", line=dict(color=ORANGE_COLOR, width=3)))
 
     fig.update_layout(title="Working Capital Components", barmode="relative", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Amount ($)")
+    fig.update_yaxes(title_text="Amount (₽)")
     return fig
 
 
@@ -203,7 +203,7 @@ def tax_chart(results: dict) -> go.Figure:
                              mode="lines+markers", line=dict(color=GREEN_COLOR, width=3)))
 
     fig.update_layout(title="Taxes: EBT → Tax → Net Income", barmode="relative", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Amount ($)")
+    fig.update_yaxes(title_text="Amount (₽)")
     return fig
 
 
@@ -231,8 +231,8 @@ def debt_chart(results: dict) -> go.Figure:
     )
 
     fig.update_layout(title="Debt Balance & Interest Expense", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Debt Balance ($)", secondary_y=False)
-    fig.update_yaxes(title_text="Interest Expense ($)", secondary_y=True)
+    fig.update_yaxes(title_text="Debt Balance (₽)", secondary_y=False)
+    fig.update_yaxes(title_text="Interest Expense (₽)", secondary_y=True)
     return fig
 
 
@@ -258,7 +258,7 @@ def equity_chart(results: dict) -> go.Figure:
                              line=dict(color=RED_COLOR, width=2, dash="dot")))
 
     fig.update_layout(title="Equity Components Over Time", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Amount ($)")
+    fig.update_yaxes(title_text="Amount (₽)")
     return fig
 
 
@@ -309,7 +309,7 @@ def pnl_chart(results: dict) -> go.Figure:
     ))
 
     fig.update_layout(title=f"P&L Waterfall — Year {t}", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Amount ($)")
+    fig.update_yaxes(title_text="Amount (₽)")
     return fig
 
 
@@ -328,7 +328,7 @@ def cashflow_chart(results: dict) -> go.Figure:
     fig.add_trace(go.Bar(x=labels, y=fin, name="Financing CF", marker_color=BLUE_COLORS[0]))
 
     fig.update_layout(title="Cash Flow by Section", barmode="group", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Cash Flow ($)")
+    fig.update_yaxes(title_text="Cash Flow (₽)")
     return fig
 
 
@@ -404,8 +404,8 @@ def fcf_chart(results: dict) -> go.Figure:
     )
 
     fig.update_layout(title="Free Cash Flow & Cumulative FCF", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Annual FCF ($)", secondary_y=False)
-    fig.update_yaxes(title_text="Cumulative FCF ($)", secondary_y=True)
+    fig.update_yaxes(title_text="Annual FCF (₽)", secondary_y=False)
+    fig.update_yaxes(title_text="Cumulative FCF (₽)", secondary_y=True)
     return fig
 
 
@@ -430,7 +430,7 @@ def npv_sensitivity_chart(results: dict) -> go.Figure:
         text=[[f"{v:,.0f}" for v in row] for row in matrix],
         texttemplate="%{text}",
         textfont={"size": 10},
-        colorbar=dict(title="NPV ($)"),
+        colorbar=dict(title="NPV (₽)"),
     ))
 
     fig.update_layout(
