@@ -61,7 +61,7 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 20,
         "wacc": 10,
         "initial_cash": 0.1,
-        "initial_investment": 0.1,  # Year-0 seed; investment-phase FCFs capture build costs
+        "initial_investment": 0,  # Year-0 seed; investment-phase FCFs capture build costs
     },
     "toll-road": {
         # Concession-based infrastructure; near-cash tolls, heavy debt, long life
@@ -78,7 +78,7 @@ SPHERE_DEFAULTS = {
         "dso": 3,                            # tolls collected on the spot
         "dpo": 45,
         "dio": 0,                            # no inventory
-        "tax_rate": 20,
+        "tax_rate": 25,
         "initial_debt": 8.0,
         "interest_rate": 5,
         "repayment_type": "Equal",
@@ -88,7 +88,10 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 40,
         "wacc": 7,
         "initial_cash": 0.5,
-        "initial_investment": 0.5,
+        "initial_investment": 0,
+        "avg_daily_traffic": 1000,
+        "tariff_rub_per_km": 1.5,
+        "road_length_km": 10,
     },
     "agriculture": {
         # Farm / agribusiness; long harvest cycles, seasonal inventory, lower tax
@@ -105,7 +108,7 @@ SPHERE_DEFAULTS = {
         "dso": 30,
         "dpo": 30,
         "dio": 120,                          # long harvest & storage cycle
-        "tax_rate": 15,
+        "tax_rate": 25,
         "initial_debt": 0.35,
         "interest_rate": 6,
         "repayment_type": "Equal",
@@ -115,7 +118,7 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 20,
         "wacc": 9,
         "initial_cash": 0.1,
-        "initial_investment": 0.1,
+        "initial_investment": 0,
     },
     "mining": {
         # Extractive industry; Year-0 capex already embedded in opening NFA;
@@ -133,7 +136,7 @@ SPHERE_DEFAULTS = {
         "dso": 15,
         "dpo": 45,
         "dio": 30,
-        "tax_rate": 30,
+        "tax_rate": 25,
         "initial_debt": 3.0,
         "interest_rate": 6,
         "repayment_type": "Equal",
@@ -143,7 +146,7 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 30,
         "wacc": 11,
         "initial_cash": 1.0,
-        "initial_investment": 1.0,
+        "initial_investment": 0,
     },
     "port": {
         # Port / terminal; stable throughput fees; WACC reflects infrastructure risk
@@ -160,7 +163,7 @@ SPHERE_DEFAULTS = {
         "dso": 30,
         "dpo": 60,
         "dio": 10,
-        "tax_rate": 20,
+        "tax_rate": 25,
         "initial_debt": 6.0,
         "interest_rate": 5,
         "repayment_type": "Equal",
@@ -170,7 +173,7 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 35,
         "wacc": 6,                           # infrastructure WACC
         "initial_cash": 0.5,
-        "initial_investment": 0.5,
+        "initial_investment": 0,
     },
 }
 
@@ -268,9 +271,27 @@ def build_inputs_tab():
         dbc.Row([
             dbc.Col([
                 section_header("📈 Revenue"),
+                html.Div(id="div-base-revenue", children=[
+                    dbc.Row([
+                        input_group("Base Revenue (Year 1, ₽M)", "inp-base-revenue",
+                                    DEFAULTS["base_revenue"], step=0.01),
+                    ]),
+                ]),
+                html.Div(id="div-toll-revenue", style={"display": "none"}, children=[
+                    dbc.Row([
+                        input_group("Avg Daily Traffic (vehicles/day)", "inp-adt",
+                                    1000, step=100, min_val=0),
+                        input_group("Tariff (₽/km)", "inp-tariff",
+                                    1.5, step=0.1, min_val=0),
+                        input_group("Road Length (km)", "inp-road-length",
+                                    10, step=1, min_val=1),
+                        dbc.Col([
+                            dbc.Label("Computed Base Revenue", className="fw-semibold small text-muted"),
+                            html.Div(id="div-computed-revenue", className="fw-bold text-primary mt-1"),
+                        ], md=6, className="mb-3"),
+                    ]),
+                ]),
                 dbc.Row([
-                    input_group("Base Revenue (Year 1, ₽M)", "inp-base-revenue",
-                                DEFAULTS["base_revenue"], step=0.01),
                     input_group("Revenue Growth Rate", "inp-growth-rate",
                                 DEFAULTS["revenue_growth_rate"], suffix="%", step=0.5),
                 ]),
@@ -490,6 +511,31 @@ def update_total_years_badge(inv, op):
 
 
 @callback(
+    Output("div-base-revenue", "style"),
+    Output("div-toll-revenue", "style"),
+    Input("inp-sphere", "value"),
+)
+def toggle_revenue_inputs(sphere):
+    if sphere == "toll-road":
+        return {"display": "none"}, {"display": "block"}
+    return {"display": "block"}, {"display": "none"}
+
+
+@callback(
+    Output("div-computed-revenue", "children"),
+    Input("inp-adt", "value"),
+    Input("inp-tariff", "value"),
+    Input("inp-road-length", "value"),
+)
+def update_computed_revenue(adt, tariff, length):
+    try:
+        rev = (float(adt or 0) * float(tariff or 0) * float(length or 0) * 365) / 1_000_000
+        return f"₽{rev:,.3f}M / year"
+    except Exception:
+        return "N/A"
+
+
+@callback(
     Output("inp-investment-years", "value"),
     Output("inp-operating-years", "value"),
     Output("inp-base-revenue", "value"),
@@ -514,6 +560,9 @@ def update_total_years_badge(inv, op):
     Output("inp-wacc", "value"),
     Output("inp-initial-investment", "value"),
     Output("inp-initial-cash", "value"),
+    Output("inp-adt", "value"),
+    Output("inp-tariff", "value"),
+    Output("inp-road-length", "value"),
     Input("inp-sphere", "value"),
 )
 def update_sphere_inputs(sphere):
@@ -543,6 +592,9 @@ def update_sphere_inputs(sphere):
         d["wacc"],
         d["initial_investment"],
         d["initial_cash"],
+        d.get("avg_daily_traffic", 1000),
+        d.get("tariff_rub_per_km", 1.5),
+        d.get("road_length_km", 10),
     )
 
 
@@ -577,6 +629,10 @@ def update_sphere_inputs(sphere):
     State("inp-wacc", "value"),
     State("inp-initial-investment", "value"),
     State("inp-initial-cash", "value"),
+    State("inp-sphere", "value"),
+    State("inp-adt", "value"),
+    State("inp-tariff", "value"),
+    State("inp-road-length", "value"),
     prevent_initial_call=False,
 )
 def run_model(n_clicks, *args):
@@ -590,9 +646,19 @@ def run_model(n_clicks, *args):
         "initial_equity", "annual_equity_injection", "dividends_pct",
         "wacc", "initial_investment", "initial_cash",
     ]
+    sphere = args[len(keys)]
+    adt = args[len(keys) + 1]
+    tariff = args[len(keys) + 2]
+    road_length = args[len(keys) + 3]
+
     inputs = {}
     for key, val in zip(keys, args):
         inputs[key] = val if val is not None else DEFAULTS.get(key, 0)
+
+    if sphere == "toll-road":
+        inputs["base_revenue"] = (
+            float(adt or 0) * float(tariff or 0) * float(road_length or 0) * 365
+        ) / 1_000_000
 
     try:
         results = dcf_model.run(inputs)
