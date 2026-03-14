@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 import dash
-from dash import dcc, html, Input, Output, State, callback
+from dash import dcc, html, Input, Output, State, callback, ALL
 import dash_bootstrap_components as dbc
 
 from model.dcf_model import DCFModel
@@ -45,7 +45,8 @@ SPHERE_DEFAULTS = {
         "revenue_growth_rate": 12,
         "cogs_pct": 35,
         "opex_pct": 20,
-        "annual_capex": 0.08,
+        "total_capex": 0.08,
+        "capex_pct_schedule": [100],
         "intangibles_investment": 0.03,
         "useful_life_years": 10,
         "amortization_period": 5,
@@ -62,18 +63,19 @@ SPHERE_DEFAULTS = {
         "dividends_pct": 20,
         "wacc": 10,
         "initial_cash": 0.1,
-        "initial_investment": 0,  # Year-0 seed; investment-phase FCFs capture build costs
+        "initial_investment": 0,
     },
     "toll-road": {
         # Concession-based infrastructure; near-cash tolls, heavy debt, long life
         "vat_rate": 22,
-        "investment_years": 3,
-        "operating_years": 12,
+        "investment_years": 4,
+        "operating_years": 24,
         "base_revenue": 5.0,
         "revenue_growth_rate": 4,
         "cogs_pct": 8.78,
         "opex_pct": 14.05,
-        "annual_capex": 0.4,
+        "total_capex": 1.6,
+        "capex_pct_schedule": [15, 30, 40, 15],
         "intangibles_investment": 0.15,      # concession rights
         "useful_life_years": 30,
         "amortization_period": 20,
@@ -106,7 +108,8 @@ SPHERE_DEFAULTS = {
         "revenue_growth_rate": 5,
         "cogs_pct": 55,
         "opex_pct": 15,
-        "annual_capex": 0.06,
+        "total_capex": 0.12,
+        "capex_pct_schedule": [60, 40],
         "intangibles_investment": 0.01,      # land-use permits
         "useful_life_years": 15,
         "amortization_period": 10,
@@ -135,7 +138,8 @@ SPHERE_DEFAULTS = {
         "revenue_growth_rate": 3,
         "cogs_pct": 50,
         "opex_pct": 18,
-        "annual_capex": 0.5,                 # sustaining capex only
+        "total_capex": 1.5,
+        "capex_pct_schedule": [20, 50, 30],
         "intangibles_investment": 0.1,       # exploration licence renewals
         "useful_life_years": 20,
         "amortization_period": 10,
@@ -163,7 +167,8 @@ SPHERE_DEFAULTS = {
         "revenue_growth_rate": 5,
         "cogs_pct": 10,
         "opex_pct": 25,
-        "annual_capex": 0.3,
+        "total_capex": 1.2,
+        "capex_pct_schedule": [10, 30, 40, 20],
         "intangibles_investment": 0.05,      # concession / operating licences
         "useful_life_years": 25,
         "amortization_period": 15,
@@ -321,14 +326,19 @@ def build_inputs_tab():
                 ]),
                 section_header("🏗️ Fixed Assets & Intangibles"),
                 dbc.Row([
-                    input_group("Annual CapEx (₽M)", "inp-annual-capex",
-                                DEFAULTS["annual_capex"], step=0.01),
+                    input_group("Total CapEx (₽M)", "inp-total-capex",
+                                DEFAULTS["total_capex"], step=0.01),
                     input_group("Annual Intangibles Investment (₽M)", "inp-intangibles",
                                 DEFAULTS["intangibles_investment"], step=0.01),
                     input_group("Useful Life (years)", "inp-useful-life",
                                 DEFAULTS["useful_life_years"], min_val=1, step=1),
                     input_group("Amortization Period (years)", "inp-amort-period",
                                 DEFAULTS["amortization_period"], min_val=1, step=1),
+                ]),
+                html.Div([
+                    dbc.Label("CapEx % by Investment Year", className="fw-semibold small"),
+                    html.Div(id="div-capex-pct-inputs"),
+                    html.Div(id="div-capex-pct-sum", className="mt-1 mb-2"),
                 ]),
                 section_header("🔄 Working Capital"),
                 dbc.Row([
@@ -564,7 +574,7 @@ def update_computed_revenue(adt, tariff, length):
     Output("inp-growth-rate", "value"),
     Output("inp-cogs-pct", "value"),
     Output("inp-opex-pct", "value"),
-    Output("inp-annual-capex", "value"),
+    Output("inp-total-capex", "value"),
     Output("inp-intangibles", "value"),
     Output("inp-useful-life", "value"),
     Output("inp-amort-period", "value"),
@@ -599,7 +609,7 @@ def update_sphere_inputs(sphere):
         d["revenue_growth_rate"],
         d["cogs_pct"],
         d["opex_pct"],
-        d["annual_capex"],
+        d["total_capex"],
         d["intangibles_investment"],
         d["useful_life_years"],
         d["amortization_period"],
@@ -626,6 +636,44 @@ def update_sphere_inputs(sphere):
 
 
 # ─────────────────────────────────────────────
+# Callback: Investment Years / Sphere → CapEx % Inputs
+# ─────────────────────────────────────────────
+@callback(
+    Output("div-capex-pct-inputs", "children"),
+    Input("inp-investment-years", "value"),
+    Input("inp-sphere", "value"),
+)
+def update_capex_pct_inputs(inv_years, sphere):
+    n = int(inv_years or 0)
+    defaults_schedule = SPHERE_DEFAULTS.get(sphere, DEFAULTS).get("capex_pct_schedule", [])
+    if n == 0:
+        return html.P("No investment phase — CapEx schedule not applicable.",
+                      className="text-muted small fst-italic")
+    rows = []
+    for i in range(1, n + 1):
+        default_pct = defaults_schedule[i - 1] if i <= len(defaults_schedule) else round(100 / n, 1)
+        rows.append(input_group(
+            f"Year {i} (%)",
+            {"type": "capex-pct", "index": i},
+            default_pct, suffix="%", step=0.1, min_val=0,
+        ))
+    return dbc.Row(rows)
+
+
+@callback(
+    Output("div-capex-pct-sum", "children"),
+    Input({"type": "capex-pct", "index": ALL}, "value"),
+)
+def update_capex_pct_sum(values):
+    if not values:
+        return None
+    total = sum(float(v or 0) for v in values)
+    color = "success" if abs(total - 100) < 0.11 else "warning"
+    return dbc.Badge(f"Sum: {total:.1f}%  {'✓' if color == 'success' else '⚠ should equal 100%'}",
+                     color=color, className="px-2 py-1")
+
+
+# ─────────────────────────────────────────────
 # Callback: Run Model → Store Results
 # ─────────────────────────────────────────────
 @callback(
@@ -638,7 +686,7 @@ def update_sphere_inputs(sphere):
     State("inp-growth-rate", "value"),
     State("inp-cogs-pct", "value"),
     State("inp-opex-pct", "value"),
-    State("inp-annual-capex", "value"),
+    State("inp-total-capex", "value"),
     State("inp-intangibles", "value"),
     State("inp-useful-life", "value"),
     State("inp-amort-period", "value"),
@@ -663,13 +711,14 @@ def update_sphere_inputs(sphere):
     State("inp-road-length", "value"),
     State("inp-tariff-growth", "value"),
     State("inp-traffic-growth", "value"),
+    State({"type": "capex-pct", "index": ALL}, "value"),
     prevent_initial_call=False,
 )
 def run_model(n_clicks, *args):
     keys = [
         "investment_years", "operating_years",
         "base_revenue", "revenue_growth_rate",
-        "cogs_pct", "opex_pct", "annual_capex", "intangibles_investment",
+        "cogs_pct", "opex_pct", "total_capex", "intangibles_investment",
         "useful_life_years", "amortization_period",
         "dso", "dpo", "dio", "tax_rate",
         "initial_debt", "interest_rate", "repayment_type", "new_debt_annual",
@@ -683,10 +732,12 @@ def run_model(n_clicks, *args):
     road_length = args[len(keys) + 3]
     tariff_growth = args[len(keys) + 4]
     traffic_growth = args[len(keys) + 5]
+    capex_pct_values = args[len(keys) + 6]
 
     inputs = {}
     for key, val in zip(keys, args):
         inputs[key] = val if val is not None else DEFAULTS.get(key, 0)
+    inputs["capex_pct_schedule"] = [float(v or 0) for v in (capex_pct_values or [])]
 
     if sphere == "toll-road":
         inputs["base_revenue"] = (

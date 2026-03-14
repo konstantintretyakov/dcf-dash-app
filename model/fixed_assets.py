@@ -2,13 +2,14 @@ class FixedAssetsAndIntangibles:
     """Computes CapEx, D&A, and net fixed asset / intangibles balances."""
 
     def compute(self, inputs: dict, period: int) -> dict:
-        annual_capex = float(inputs.get("annual_capex", 0))
+        total_capex = float(inputs.get("total_capex", 0))
+        capex_pct_schedule = inputs.get("capex_pct_schedule", [])   # list of % per inv year
+        investment_years = int(inputs.get("investment_years", 0))
         intangibles_amt = float(inputs.get("intangibles_investment", 0))
         useful_life = max(1, int(inputs.get("useful_life_years", 10)))
         amort_period = max(1, int(inputs.get("amortization_period", 5)))
 
         # Opening NFA at Year 0: represents capital already deployed in assets
-        # (total funding raised minus cash kept on hand)
         opening_nfa = max(
             0.0,
             float(inputs.get("initial_equity", 0))
@@ -26,6 +27,13 @@ class FixedAssetsAndIntangibles:
         cumulative_intang = 0.0
 
         for t in range(1, period + 1):
+            # CapEx only during investment phase, distributed by % schedule
+            if t <= investment_years:
+                pct = float(capex_pct_schedule[t - 1]) / 100.0 if t <= len(capex_pct_schedule) else 0.0
+                annual_capex = total_capex * pct
+            else:
+                annual_capex = 0.0
+
             cumulative_capex += annual_capex
             cumulative_intang += intangibles_amt
 
