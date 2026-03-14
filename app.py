@@ -38,6 +38,7 @@ dcf_model = DCFModel()
 SPHERE_DEFAULTS = {
     "production": {
         # General manufacturing / industrial production
+        "vat_rate": 22,
         "investment_years": 1,
         "operating_years": 5,
         "base_revenue": 1.0,
@@ -65,12 +66,13 @@ SPHERE_DEFAULTS = {
     },
     "toll-road": {
         # Concession-based infrastructure; near-cash tolls, heavy debt, long life
+        "vat_rate": 22,
         "investment_years": 3,
         "operating_years": 12,
         "base_revenue": 5.0,
         "revenue_growth_rate": 4,
-        "cogs_pct": 10,
-        "opex_pct": 25,
+        "cogs_pct": 8.78,
+        "opex_pct": 14.05,
         "annual_capex": 0.4,
         "intangibles_investment": 0.15,      # concession rights
         "useful_life_years": 30,
@@ -89,12 +91,15 @@ SPHERE_DEFAULTS = {
         "wacc": 7,
         "initial_cash": 0.5,
         "initial_investment": 0,
-        "avg_daily_traffic": 1000,
-        "tariff_rub_per_km": 1.5,
-        "road_length_km": 10,
+        "avg_daily_traffic": 74096,
+        "tariff_rub_per_km": 58.51,
+        "road_length_km": 16.2,
+        "tariff_growth_rate": 3.98,
+        "traffic_growth_rate": 0.78,
     },
     "agriculture": {
         # Farm / agribusiness; long harvest cycles, seasonal inventory, lower tax
+        "vat_rate": 22,
         "investment_years": 2,
         "operating_years": 10,
         "base_revenue": 0.8,
@@ -123,6 +128,7 @@ SPHERE_DEFAULTS = {
     "mining": {
         # Extractive industry; Year-0 capex already embedded in opening NFA;
         # ongoing sustaining capex is low, making annual FCF strongly positive.
+        "vat_rate": 22,
         "investment_years": 3,
         "operating_years": 12,
         "base_revenue": 8.0,
@@ -150,6 +156,7 @@ SPHERE_DEFAULTS = {
     },
     "port": {
         # Port / terminal; stable throughput fees; WACC reflects infrastructure risk
+        "vat_rate": 22,
         "investment_years": 4,
         "operating_years": 16,
         "base_revenue": 3.0,
@@ -280,20 +287,30 @@ def build_inputs_tab():
                 html.Div(id="div-toll-revenue", style={"display": "none"}, children=[
                     dbc.Row([
                         input_group("Avg Daily Traffic (vehicles/day)", "inp-adt",
-                                    1000, step=100, min_val=0),
-                        input_group("Tariff (₽/km)", "inp-tariff",
-                                    1.5, step=0.1, min_val=0),
+                                    74096, step=100, min_val=0),
+                        input_group("Tariff (₽/km, excl. VAT)", "inp-tariff",
+                                    58.51, step=0.1, min_val=0),
                         input_group("Road Length (km)", "inp-road-length",
-                                    10, step=1, min_val=1),
+                                    16.2, step=0.1, min_val=0.1),
                         dbc.Col([
                             dbc.Label("Computed Base Revenue", className="fw-semibold small text-muted"),
                             html.Div(id="div-computed-revenue", className="fw-bold text-primary mt-1"),
                         ], md=6, className="mb-3"),
                     ]),
                 ]),
-                dbc.Row([
-                    input_group("Revenue Growth Rate", "inp-growth-rate",
-                                DEFAULTS["revenue_growth_rate"], suffix="%", step=0.5),
+                html.Div(id="div-revenue-growth", children=[
+                    dbc.Row([
+                        input_group("Revenue Growth Rate", "inp-growth-rate",
+                                    DEFAULTS["revenue_growth_rate"], suffix="%", step=0.5),
+                    ]),
+                ]),
+                html.Div(id="div-toll-growth", style={"display": "none"}, children=[
+                    dbc.Row([
+                        input_group("Tariff Growth Rate", "inp-tariff-growth",
+                                    3.98, suffix="%", step=0.1),
+                        input_group("Traffic Growth Rate", "inp-traffic-growth",
+                                    0.78, suffix="%", step=0.1),
+                    ]),
                 ]),
                 section_header("💸 Operating Expenses"),
                 dbc.Row([
@@ -325,6 +342,8 @@ def build_inputs_tab():
                 section_header("🧾 Taxes"),
                 dbc.Row([
                     input_group("Tax Rate", "inp-tax-rate", DEFAULTS["tax_rate"],
+                                suffix="%", step=0.5),
+                    input_group("VAT Rate", "inp-vat-rate", 22,
                                 suffix="%", step=0.5),
                 ]),
                 section_header("🏦 Debt Financing"),
@@ -513,12 +532,14 @@ def update_total_years_badge(inv, op):
 @callback(
     Output("div-base-revenue", "style"),
     Output("div-toll-revenue", "style"),
+    Output("div-revenue-growth", "style"),
+    Output("div-toll-growth", "style"),
     Input("inp-sphere", "value"),
 )
 def toggle_revenue_inputs(sphere):
     if sphere == "toll-road":
-        return {"display": "none"}, {"display": "block"}
-    return {"display": "block"}, {"display": "none"}
+        return {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "block"}
+    return {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "none"}
 
 
 @callback(
@@ -530,12 +551,13 @@ def toggle_revenue_inputs(sphere):
 def update_computed_revenue(adt, tariff, length):
     try:
         rev = (float(adt or 0) * float(tariff or 0) * float(length or 0) * 365) / 1_000_000
-        return f"₽{rev:,.3f}M / year"
+        return f"₽{round(rev):,}M / year"
     except Exception:
         return "N/A"
 
 
 @callback(
+    Output("inp-vat-rate", "value"),
     Output("inp-investment-years", "value"),
     Output("inp-operating-years", "value"),
     Output("inp-base-revenue", "value"),
@@ -563,11 +585,14 @@ def update_computed_revenue(adt, tariff, length):
     Output("inp-adt", "value"),
     Output("inp-tariff", "value"),
     Output("inp-road-length", "value"),
+    Output("inp-tariff-growth", "value"),
+    Output("inp-traffic-growth", "value"),
     Input("inp-sphere", "value"),
 )
 def update_sphere_inputs(sphere):
     d = SPHERE_DEFAULTS.get(sphere, DEFAULTS)
     return (
+        d.get("vat_rate", 20),
         d["investment_years"],
         d["operating_years"],
         d["base_revenue"],
@@ -592,9 +617,11 @@ def update_sphere_inputs(sphere):
         d["wacc"],
         d["initial_investment"],
         d["initial_cash"],
-        d.get("avg_daily_traffic", 1000),
-        d.get("tariff_rub_per_km", 1.5),
-        d.get("road_length_km", 10),
+        d.get("avg_daily_traffic", 74096),
+        d.get("tariff_rub_per_km", 58.51),
+        d.get("road_length_km", 16.2),
+        d.get("tariff_growth_rate", 3.98),
+        d.get("traffic_growth_rate", 0.78),
     )
 
 
@@ -629,10 +656,13 @@ def update_sphere_inputs(sphere):
     State("inp-wacc", "value"),
     State("inp-initial-investment", "value"),
     State("inp-initial-cash", "value"),
+    State("inp-vat-rate", "value"),
     State("inp-sphere", "value"),
     State("inp-adt", "value"),
     State("inp-tariff", "value"),
     State("inp-road-length", "value"),
+    State("inp-tariff-growth", "value"),
+    State("inp-traffic-growth", "value"),
     prevent_initial_call=False,
 )
 def run_model(n_clicks, *args):
@@ -645,11 +675,14 @@ def run_model(n_clicks, *args):
         "initial_debt", "interest_rate", "repayment_type", "new_debt_annual",
         "initial_equity", "annual_equity_injection", "dividends_pct",
         "wacc", "initial_investment", "initial_cash",
+        "vat_rate",
     ]
     sphere = args[len(keys)]
     adt = args[len(keys) + 1]
     tariff = args[len(keys) + 2]
     road_length = args[len(keys) + 3]
+    tariff_growth = args[len(keys) + 4]
+    traffic_growth = args[len(keys) + 5]
 
     inputs = {}
     for key, val in zip(keys, args):
@@ -659,6 +692,9 @@ def run_model(n_clicks, *args):
         inputs["base_revenue"] = (
             float(adt or 0) * float(tariff or 0) * float(road_length or 0) * 365
         ) / 1_000_000
+        tg = float(tariff_growth or 0) / 100
+        trg = float(traffic_growth or 0) / 100
+        inputs["revenue_growth_rate"] = ((1 + tg) * (1 + trg) - 1) * 100
 
     try:
         results = dcf_model.run(inputs)
@@ -806,6 +842,7 @@ def update_all_tabs(results):
     # ── Cash Flow ──
     cf_items = {
         "Operating CF (₽M)": results.get("operating_cf", []),
+        "  incl. VAT CF (₽M)": results.get("vat_cf", []),
         "Investing CF (₽M)": results.get("investing_cf", []),
         "Financing CF (₽M)": results.get("financing_cf", []),
         "Free Cash Flow (₽M)": results.get("free_cash_flow", []),
