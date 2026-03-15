@@ -20,6 +20,8 @@ INV_HEADER_BG = "#e67e22"   # orange
 INV_DATA_BG   = "#fef9f0"   # light amber
 OP_HEADER_BG  = "#27ae60"   # green
 OP_DATA_BG    = "#f0faf4"   # light mint
+SUM_HEADER_BG = "#8e44ad"   # purple
+SUM_DATA_BG   = "#f5eefb"   # light lavender
 
 
 def _col_display_name(t: int, investment_years: int) -> str:
@@ -37,8 +39,9 @@ def build_table(
     period: int,
     table_id: str = "table",
     investment_years: int = 0,
+    show_sum: bool = True,
 ) -> dash_table.DataTable:
-    """Build a DataTable with rows=line items, columns=Base / Inv N / Op N.
+    """Build a DataTable with rows=line items, columns=Sum / Base / Inv N / Op N.
 
     Args:
         line_items:       {human_readable_label: [val_year0, val_year1, ...]}
@@ -46,18 +49,22 @@ def build_table(
         table_id:         HTML id for the DataTable
         investment_years: number of investment-phase columns (highlighted orange)
     """
-    # Internal column IDs stay as "Year 0", "Year 1", … for row-data keys
     rows = []
     for label, values in line_items.items():
         row = {"Line Item": label}
+        if show_sum:
+            row["Sum"] = sum(values[t] if t < len(values) else 0.0 for t in range(1, period + 1))
         for t in range(period + 1):
             row[f"Year {t}"] = values[t] if t < len(values) else 0.0
         rows.append(row)
 
-    col_ids = ["Line Item"] + [f"Year {t}" for t in range(period + 1)]
+    col_ids = ["Line Item"] + (["Sum"] if show_sum else []) + [f"Year {t}" for t in range(period + 1)]
     df = pd.DataFrame(rows, columns=col_ids)
 
     columns = [{"name": "Line Item", "id": "Line Item", "type": "text"}]
+    if show_sum:
+        columns.append({"name": "Sum", "id": "Sum", "type": "numeric", "format": {"specifier": ",.2f"}})
+
     for t in range(period + 1):
         columns.append(
             {
@@ -69,7 +76,13 @@ def build_table(
         )
 
     # Phase-specific header colours
-    style_header_conditional = [
+    style_header_conditional = ([
+        {
+            "if": {"column_id": "Sum"},
+            "backgroundColor": SUM_HEADER_BG,
+            "color": "white",
+        },
+    ] if show_sum else []) + [
         {
             "if": {"column_id": f"Year {t}"},
             "backgroundColor": INV_HEADER_BG,
@@ -94,13 +107,20 @@ def build_table(
                     "{Line Item} contains 'Total' or "
                     "{Line Item} contains 'EBITDA' or "
                     "{Line Item} contains 'Net Income' or "
-                    "{Line Item} contains 'Free Cash'"
+                    "{Line Item} contains 'Free Cash' or "
+                    "{Line Item} contains 'Assets −'"
                 ),
             },
             "fontWeight": "bold",
             "borderTop": "2px solid #2c3e50",
         },
-    ] + [
+    ] + ([
+        {
+            "if": {"column_id": "Sum"},
+            "backgroundColor": SUM_DATA_BG,
+            "fontWeight": "bold",
+        },
+    ] if show_sum else []) + [
         {
             "if": {"column_id": f"Year {t}"},
             "backgroundColor": INV_DATA_BG,

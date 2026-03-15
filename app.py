@@ -38,6 +38,10 @@ dcf_model = DCFModel()
 SPHERE_DEFAULTS = {
     "production": {
         # General manufacturing / industrial production
+        "repair_interval": 6,
+        "repair_cost": 3949,
+        "repair_growth_rate": 4.1,
+        "shl_interest_rate": 13,
         "vat_rate": 22,
         "investment_years": 1,
         "operating_years": 5,
@@ -58,15 +62,19 @@ SPHERE_DEFAULTS = {
         "interest_rate": 6,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 0.5,
+        "initial_equity": 0.01,
         "annual_equity_injection": 0,
         "dividends_pct": 20,
         "wacc": 10,
-        "initial_cash": 0.1,
+        "initial_cash": 0.01,
         "initial_investment": 0,
     },
     "toll-road": {
         # Concession-based infrastructure; near-cash tolls, heavy debt, long life
+        "repair_interval": 6,
+        "repair_cost": 3949,
+        "repair_growth_rate": 4.1,
+        "shl_interest_rate": 13,
         "vat_rate": 22,
         "investment_years": 6,
         "operating_years": 24,
@@ -83,15 +91,15 @@ SPHERE_DEFAULTS = {
         "dpo": 0,
         "dio": 0,
         "tax_rate": 25,
-        "initial_debt": 8.0,
+        "initial_debt": 0,
         "interest_rate": 5,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 3.0,
+        "initial_equity": 0.01,
         "annual_equity_injection": 0,
         "dividends_pct": 40,
         "wacc": 7,
-        "initial_cash": 0.5,
+        "initial_cash": 0.01,
         "initial_investment": 0,
         "avg_daily_traffic": 74096,
         "tariff_rub_per_km": 58.51,
@@ -101,6 +109,10 @@ SPHERE_DEFAULTS = {
     },
     "agriculture": {
         # Farm / agribusiness; long harvest cycles, seasonal inventory, lower tax
+        "repair_interval": 6,
+        "repair_cost": 3949,
+        "repair_growth_rate": 4.1,
+        "shl_interest_rate": 13,
         "vat_rate": 22,
         "investment_years": 2,
         "operating_years": 10,
@@ -121,16 +133,20 @@ SPHERE_DEFAULTS = {
         "interest_rate": 6,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 0.3,
+        "initial_equity": 0.01,
         "annual_equity_injection": 0,
         "dividends_pct": 20,
         "wacc": 9,
-        "initial_cash": 0.1,
+        "initial_cash": 0.01,
         "initial_investment": 0,
     },
     "mining": {
         # Extractive industry; Year-0 capex already embedded in opening NFA;
         # ongoing sustaining capex is low, making annual FCF strongly positive.
+        "repair_interval": 6,
+        "repair_cost": 3949,
+        "repair_growth_rate": 4.1,
+        "shl_interest_rate": 13,
         "vat_rate": 22,
         "investment_years": 3,
         "operating_years": 12,
@@ -151,15 +167,19 @@ SPHERE_DEFAULTS = {
         "interest_rate": 6,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 3.0,
+        "initial_equity": 0.01,
         "annual_equity_injection": 0,
         "dividends_pct": 30,
         "wacc": 11,
-        "initial_cash": 1.0,
+        "initial_cash": 0.01,
         "initial_investment": 0,
     },
     "port": {
         # Port / terminal; stable throughput fees; WACC reflects infrastructure risk
+        "repair_interval": 6,
+        "repair_cost": 3949,
+        "repair_growth_rate": 4.1,
+        "shl_interest_rate": 13,
         "vat_rate": 22,
         "investment_years": 4,
         "operating_years": 16,
@@ -180,11 +200,11 @@ SPHERE_DEFAULTS = {
         "interest_rate": 5,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
-        "initial_equity": 3.5,
+        "initial_equity": 0.01,
         "annual_equity_injection": 0,
         "dividends_pct": 35,
         "wacc": 6,                           # infrastructure WACC
-        "initial_cash": 0.5,
+        "initial_cash": 0.01,
         "initial_investment": 0,
     },
 }
@@ -338,6 +358,15 @@ def build_inputs_tab():
                     html.Div(id="div-capex-pct-inputs"),
                     html.Div(id="div-capex-pct-sum", className="mt-1 mb-2"),
                 ]),
+                html.H6("🔧 Major Repairs", className="text-secondary border-bottom pb-1 mt-3 mb-2 fw-semibold small"),
+                dbc.Row([
+                    input_group("Repair Interval (years)", "inp-repair-interval",
+                                DEFAULTS.get("repair_interval", 0), min_val=0, step=1),
+                    input_group("Repair Cost (₽M, base year)", "inp-repair-cost",
+                                DEFAULTS.get("repair_cost", 0), min_val=0, step=0.01),
+                    input_group("Repair Cost Growth Rate", "inp-repair-growth-rate",
+                                DEFAULTS.get("repair_growth_rate", 0), suffix="%", step=0.1),
+                ]),
                 section_header("🔄 Working Capital"),
                 dbc.Row([
                     input_group("DSO (days)", "inp-dso", DEFAULTS["dso"], min_val=0, step=1),
@@ -360,6 +389,8 @@ def build_inputs_tab():
                                 DEFAULTS["initial_debt"], step=0.01),
                     input_group("Interest Rate", "inp-interest-rate",
                                 DEFAULTS["interest_rate"], suffix="%", step=0.25),
+                    input_group("SHL Interest Rate", "inp-shl-interest-rate",
+                                DEFAULTS.get("shl_interest_rate", 13), suffix="%", step=0.25),
                     input_group("New Annual Debt Issuance (₽M)", "inp-new-debt",
                                 DEFAULTS["new_debt_annual"], step=0.01),
                     dbc.Col([
@@ -594,6 +625,10 @@ def update_computed_revenue(adt, tariff, length):
     Output("inp-road-length", "value"),
     Output("inp-tariff-growth", "value"),
     Output("inp-traffic-growth", "value"),
+    Output("inp-repair-interval", "value"),
+    Output("inp-repair-cost", "value"),
+    Output("inp-repair-growth-rate", "value"),
+    Output("inp-shl-interest-rate", "value"),
     Input("inp-sphere", "value"),
 )
 def update_sphere_inputs(sphere):
@@ -628,6 +663,10 @@ def update_sphere_inputs(sphere):
         d.get("road_length_km", 16.2),
         d.get("tariff_growth_rate", 3.98),
         d.get("traffic_growth_rate", 0.78),
+        d.get("repair_interval", 0),
+        d.get("repair_cost", 0),
+        d.get("repair_growth_rate", 0),
+        d.get("shl_interest_rate", 13),
     )
 
 
@@ -670,6 +709,22 @@ def update_capex_pct_sum(values):
 
 
 # ─────────────────────────────────────────────
+# Callback: Toggle VAT CF Details
+# ─────────────────────────────────────────────
+@callback(
+    Output("collapse-vat-detail", "is_open"),
+    Output("btn-vat-detail", "children"),
+    Input("btn-vat-detail", "n_clicks"),
+    State("collapse-vat-detail", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_vat_detail(_, is_open):
+    new_open = not is_open
+    label = "▼ VAT CF Details" if new_open else "▶ VAT CF Details"
+    return new_open, label
+
+
+# ─────────────────────────────────────────────
 # Callback: Run Model → Store Results
 # ─────────────────────────────────────────────
 @callback(
@@ -700,6 +755,10 @@ def update_capex_pct_sum(values):
     State("inp-initial-investment", "value"),
     State("inp-initial-cash", "value"),
     State("inp-vat-rate", "value"),
+    State("inp-repair-interval", "value"),
+    State("inp-repair-cost", "value"),
+    State("inp-repair-growth-rate", "value"),
+    State("inp-shl-interest-rate", "value"),
     State("inp-sphere", "value"),
     State("inp-adt", "value"),
     State("inp-tariff", "value"),
@@ -720,6 +779,8 @@ def run_model(n_clicks, *args):
         "initial_equity", "annual_equity_injection", "dividends_pct",
         "wacc", "initial_investment", "initial_cash",
         "vat_rate",
+        "repair_interval", "repair_cost", "repair_growth_rate",
+        "shl_interest_rate",
     ]
     sphere = args[len(keys)]
     adt = args[len(keys) + 1]
@@ -734,6 +795,7 @@ def run_model(n_clicks, *args):
         inputs[key] = val if val is not None else DEFAULTS.get(key, 0)
     inputs["capex_pct_schedule"] = [float(v or 0) for v in (capex_pct_values or [])]
     inputs["intangibles_investment"] = 0
+    inputs["sphere"] = sphere
 
     if sphere == "toll-road":
         inputs["base_revenue"] = (
@@ -818,6 +880,7 @@ def update_all_tabs(results):
     # ── FA ──
     fa_items = {
         "Annual CapEx (₽M)": results.get("capex", []),
+        "Major Repairs (₽M)": results.get("major_repair", []),
         "Intangibles Investment (₽M)": results.get("intangibles_investment", []),
         "Depreciation (₽M)": results.get("depreciation", []),
         "Amortization (₽M)": results.get("amortization", []),
@@ -852,10 +915,14 @@ def update_all_tabs(results):
 
     # ── Debt ──
     debt_items = {
-        "Debt Balance (₽M)": results.get("debt_balance", []),
+        "Senior Debt Balance (₽M)": results.get("debt_balance", []),
         "Interest Expense (₽M)": results.get("interest_expense", []),
         "Principal Repayment (₽M)": results.get("principal_repayment", []),
         "New Debt Issuance (₽M)": results.get("new_debt_issuance", []),
+        "SHL Drawdown (₽M)": results.get("shl_drawdown", []),
+        "SHL Repayment (₽M)": results.get("shl_repayment", []),
+        "SHL Interest (₽M)": results.get("shl_interest", []),
+        "SHL Balance (₽M)": results.get("shl_balance", []),
     }
     debt_tab = tab_layout(tbl(debt_items, "tbl-debt"), debt_chart(results))
 
@@ -887,16 +954,68 @@ def update_all_tabs(results):
     pnl_tab = tab_layout(tbl(pnl_items, "tbl-pnl"), pnl_chart(results))
 
     # ── Cash Flow ──
+    _change_in_wc = [-v for v in results.get("change_in_wc", [])]
+
+    _vr = results.get("vat_rate", 0) / 100
+    _vf = 1 + _vr
+    _rev   = results.get("revenue", [])
+    _cogs  = results.get("cogs", [])
+    _opex  = results.get("opex", [])
+    _capex = results.get("capex", [])
+    _rep   = results.get("major_repair", [])
+    _n = period + 1
+    _vat_out_rev    = [-_rev[t]  * _vr                    for t in range(_n)]
+    _vat_in_cogs    = [ _cogs[t] * _vr                    for t in range(_n)]
+    _vat_in_opex    = [ _opex[t] * _vr                    for t in range(_n)]
+    _vat_in_capex   = [ _capex[t] / _vf * _vr             for t in range(_n)]
+    _vat_in_repairs = [ _rep[t]  / _vf * _vr              for t in range(_n)]
+
     cf_items = {
         "Operating CF (₽M)": results.get("operating_cf", []),
+        "  incl. Net Income (₽M)": results.get("net_income", []),
+        "  incl. Depreciation (₽M)": results.get("depreciation", []),
+        "  incl. Amortization (₽M)": results.get("amortization", []),
+        "  incl. (Incr)/Decr in NWC (₽M)": _change_in_wc,
         "  incl. VAT CF (₽M)": results.get("vat_cf", []),
         "Investing CF (₽M)": results.get("investing_cf", []),
         "Financing CF (₽M)": results.get("financing_cf", []),
+        "  incl. SHL Drawdown (₽M)": results.get("shl_drawdown", []),
+        "  incl. SHL Repayment (₽M)": results.get("shl_repayment", []),
+        "  incl. SHL Interest (₽M)": results.get("shl_interest", []),
         "Free Cash Flow (₽M)": results.get("free_cash_flow", []),
         "Net Cash Flow (₽M)": results.get("net_cash_flow", []),
         "Cash Balance (₽M)": results.get("cash_balance", []),
     }
-    cf_tab = tab_layout(tbl(cf_items, "tbl-cf"), cashflow_chart(results))
+    vat_detail_items = {
+        "Output VAT on Revenue (₽M)": _vat_out_rev,
+        "Input VAT on Revenue (₽M)": [_rev[t] * _vr for t in range(_n)],
+        "Input VAT on COGS (₽M)": _vat_in_cogs,
+        "Output VAT on COGS (₽M)": [-v for v in _vat_in_cogs],
+        "Input VAT on OpEx (₽M)": _vat_in_opex,
+        "Output VAT on OpEx (₽M)": [-v for v in _vat_in_opex],
+        "Input VAT on CapEx (₽M)": _vat_in_capex,
+        "Input VAT on Major Repairs (₽M)": _vat_in_repairs,
+    }
+    cf_tab = dbc.Container([
+        html.Div(tbl(cf_items, "tbl-cf"), className="mb-2"),
+        dbc.Button(
+            "▶ VAT CF Details",
+            id="btn-vat-detail",
+            color="secondary",
+            outline=True,
+            size="sm",
+            className="mb-2",
+        ),
+        dbc.Collapse(
+            html.Div(
+                build_table(vat_detail_items, period, "tbl-vat-detail", investment_years=inv),
+                className="mb-3",
+            ),
+            id="collapse-vat-detail",
+            is_open=False,
+        ),
+        dcc.Graph(figure=cashflow_chart(results), config={"displayModeBar": True}),
+    ], fluid=True, className="py-3")
 
     # ── Balance Sheet ──
     balance_checks = results.get("bs_balance_check", [True] * (period + 1))
@@ -916,15 +1035,21 @@ def update_all_tabs(results):
         "Net Intangibles (₽M)": results.get("net_intangibles", []),
         "Total Assets (₽M)": results.get("bs_total_assets", []),
         "Accounts Payable (₽M)": results.get("accounts_payable", []),
-        "Debt Balance (₽M)": results.get("debt_balance", []),
+        "Senior Debt Balance (₽M)": results.get("debt_balance", []),
+        "Shareholders' Loan Balance (₽M)": results.get("shl_balance", []),
         "Total Liabilities (₽M)": results.get("bs_total_liabilities", []),
         "Paid-in Capital (₽M)": results.get("paid_in_capital", []),
         "Retained Earnings (₽M)": results.get("retained_earnings", []),
         "Total Equity (₽M)": results.get("bs_total_equity", []),
+        "Total Liabilities & Equity (₽M)": [
+            results.get("bs_total_liabilities", [])[t] + results.get("bs_total_equity", [])[t]
+            for t in range(period + 1)
+        ],
+        "Assets − Equity & Liabilities (₽M)": results.get("bs_balance_diff", []),
     }
     bs_tab = dbc.Container([
         balance_indicator,
-        html.Div(tbl(bs_items, "tbl-bs"), className="mb-3"),
+        html.Div(build_table(bs_items, period, "tbl-bs", investment_years=inv, show_sum=False), className="mb-3"),
         dcc.Graph(figure=balance_sheet_chart(results)),
     ], fluid=True, className="py-3")
 

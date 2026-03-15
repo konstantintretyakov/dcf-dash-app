@@ -147,6 +147,7 @@ def fa_chart(results: dict) -> go.Figure:
     net_intang = results.get("net_intangibles", [0] * len(years))
     dep = results.get("depreciation", [0] * len(years))
     amort = results.get("amortization", [0] * len(years))
+    major_repair = results.get("major_repair", [0] * len(years))
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=labels, y=nfa, name="Net Fixed Assets",
@@ -157,6 +158,9 @@ def fa_chart(results: dict) -> go.Figure:
                              mode="lines+markers", line=dict(color=RED_COLOR, width=2, dash="dot")))
     fig.add_trace(go.Scatter(x=labels, y=amort, name="Amortization",
                              mode="lines+markers", line=dict(color=ORANGE_COLOR, width=2, dash="dot")))
+    if any(v > 0 for v in major_repair):
+        fig.add_trace(go.Bar(x=labels, y=major_repair, name="Major Repairs",
+                             marker_color=GREY_COLOR, opacity=0.7))
 
     fig.update_layout(title="Fixed Assets & Intangibles Over Time", **LAYOUT_BASE)
     fig.update_yaxes(title_text="Amount (₽M)")
@@ -214,24 +218,33 @@ def debt_chart(results: dict) -> go.Figure:
     years, labels = _years(results)
     debt = results.get("debt_balance", [0] * len(years))
     interest = results.get("interest_expense", [0] * len(years))
+    shl = results.get("shl_balance", [0] * len(years))
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     fig.add_trace(
-        go.Scatter(x=labels, y=debt, name="Debt Balance",
+        go.Scatter(x=labels, y=debt, name="Senior Debt Balance",
                    mode="lines", fill="tozeroy",
                    line=dict(color=RED_COLOR, width=2),
                    fillcolor="rgba(231,76,60,0.2)"),
         secondary_y=False,
     )
+    if any(v > 0 for v in shl):
+        fig.add_trace(
+            go.Scatter(x=labels, y=shl, name="SHL Balance",
+                       mode="lines", fill="tozeroy",
+                       line=dict(color=ORANGE_COLOR, width=2, dash="dot"),
+                       fillcolor="rgba(243,156,18,0.15)"),
+            secondary_y=False,
+        )
     fig.add_trace(
         go.Bar(x=labels, y=interest, name="Interest Expense",
-               marker_color=ORANGE_COLOR, opacity=0.8),
+               marker_color=BLUE_COLORS[2], opacity=0.8),
         secondary_y=True,
     )
 
     fig.update_layout(title="Debt Balance & Interest Expense", **LAYOUT_BASE)
-    fig.update_yaxes(title_text="Debt Balance (₽M)", secondary_y=False)
+    fig.update_yaxes(title_text="Debt / SHL Balance (₽M)", secondary_y=False)
     fig.update_yaxes(title_text="Interest Expense (₽M)", secondary_y=True)
     return fig
 
