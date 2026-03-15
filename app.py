@@ -68,20 +68,20 @@ SPHERE_DEFAULTS = {
     "toll-road": {
         # Concession-based infrastructure; near-cash tolls, heavy debt, long life
         "vat_rate": 22,
-        "investment_years": 4,
+        "investment_years": 6,
         "operating_years": 24,
         "base_revenue": 5.0,
         "revenue_growth_rate": 4,
         "cogs_pct": 8.78,
         "opex_pct": 14.05,
-        "total_capex": 1.6,
-        "capex_pct_schedule": [15, 30, 40, 15],
+        "total_capex": 238963,
+        "capex_pct_schedule": [1.42, 1.42, 17.09, 38.92, 30.50, 10.65],
         "intangibles_investment": 0.15,      # concession rights
         "useful_life_years": 30,
-        "amortization_period": 20,
-        "dso": 3,                            # tolls collected on the spot
-        "dpo": 45,
-        "dio": 0,                            # no inventory
+        "amortization_period": 19,
+        "dso": 0,
+        "dpo": 0,
+        "dio": 0,
         "tax_rate": 25,
         "initial_debt": 8.0,
         "interest_rate": 5,
@@ -326,10 +326,8 @@ def build_inputs_tab():
                 ]),
                 section_header("🏗️ Fixed Assets & Intangibles"),
                 dbc.Row([
-                    input_group("Total CapEx (₽M)", "inp-total-capex",
+                    input_group("Total CapEx (₽M, incl. VAT)", "inp-total-capex",
                                 DEFAULTS["total_capex"], step=0.01),
-                    input_group("Annual Intangibles Investment (₽M)", "inp-intangibles",
-                                DEFAULTS["intangibles_investment"], step=0.01),
                     input_group("Useful Life (years)", "inp-useful-life",
                                 DEFAULTS["useful_life_years"], min_val=1, step=1),
                     input_group("Amortization Period (years)", "inp-amort-period",
@@ -575,7 +573,6 @@ def update_computed_revenue(adt, tariff, length):
     Output("inp-cogs-pct", "value"),
     Output("inp-opex-pct", "value"),
     Output("inp-total-capex", "value"),
-    Output("inp-intangibles", "value"),
     Output("inp-useful-life", "value"),
     Output("inp-amort-period", "value"),
     Output("inp-dso", "value"),
@@ -610,7 +607,6 @@ def update_sphere_inputs(sphere):
         d["cogs_pct"],
         d["opex_pct"],
         d["total_capex"],
-        d["intangibles_investment"],
         d["useful_life_years"],
         d["amortization_period"],
         d["dso"],
@@ -687,7 +683,6 @@ def update_capex_pct_sum(values):
     State("inp-cogs-pct", "value"),
     State("inp-opex-pct", "value"),
     State("inp-total-capex", "value"),
-    State("inp-intangibles", "value"),
     State("inp-useful-life", "value"),
     State("inp-amort-period", "value"),
     State("inp-dso", "value"),
@@ -718,7 +713,7 @@ def run_model(n_clicks, *args):
     keys = [
         "investment_years", "operating_years",
         "base_revenue", "revenue_growth_rate",
-        "cogs_pct", "opex_pct", "total_capex", "intangibles_investment",
+        "cogs_pct", "opex_pct", "total_capex",
         "useful_life_years", "amortization_period",
         "dso", "dpo", "dio", "tax_rate",
         "initial_debt", "interest_rate", "repayment_type", "new_debt_annual",
@@ -738,6 +733,7 @@ def run_model(n_clicks, *args):
     for key, val in zip(keys, args):
         inputs[key] = val if val is not None else DEFAULTS.get(key, 0)
     inputs["capex_pct_schedule"] = [float(v or 0) for v in (capex_pct_values or [])]
+    inputs["intangibles_investment"] = 0
 
     if sphere == "toll-road":
         inputs["base_revenue"] = (
