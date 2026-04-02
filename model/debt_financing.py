@@ -3,7 +3,7 @@ class DebtFinancing:
 
     Toll-road sphere uses a dedicated senior-debt model:
       - Drawdown = CapEx × (1 + VAT rate) each investment year
-      - Equal repayment over the operating phase
+      - Equal repayment over the operating phase (or cash sweep if selected)
     All other spheres use the generic initial_debt / new_debt_annual model.
     """
 
@@ -37,6 +37,8 @@ class DebtFinancing:
 
             if repayment_type == "Equal":
                 repayment = min(annual_repayment, prev_balance)
+            elif repayment_type == "Sweep":
+                repayment = 0.0  # actual repayment determined by CashFlow
             else:  # Bullet
                 repayment = prev_balance if t == period else 0.0
 
@@ -55,10 +57,12 @@ class DebtFinancing:
         }
 
     def _toll_road(self, inputs, period, interest_rate, investment_years, operating_years):
-        """Senior debt = CapEx (already incl. VAT). Repaid equally over the operating phase."""
+        """Senior debt = CapEx drawdowns during investment years.
+        Equal repayment over the operating phase, or 0 (deferred to CashFlow) for sweep.
+        """
         capex = inputs.get("capex", [0.0] * (period + 1))
+        repayment_type = inputs.get("repayment_type", "Equal")
 
-        # capex already includes VAT (entered as such in the UI)
         total_senior_debt = sum(capex[t] for t in range(1, period + 1))
         equal_repayment = total_senior_debt / operating_years if operating_years > 0 else 0.0
 
@@ -72,7 +76,11 @@ class DebtFinancing:
             interest = prev_balance * interest_rate
 
             drawdown = capex[t] if t <= investment_years else 0.0
-            repayment = min(equal_repayment, prev_balance) if t > investment_years else 0.0
+
+            if repayment_type == "Equal":
+                repayment = min(equal_repayment, prev_balance) if t > investment_years else 0.0
+            else:  # Sweep or Bullet — actual repayment determined by CashFlow
+                repayment = 0.0
 
             new_balance = max(0.0, prev_balance + drawdown - repayment)
 

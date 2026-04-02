@@ -4,6 +4,9 @@ class CashFlow:
     Toll-road sphere adds Shareholders' Loans (SHL) that automatically fill
     any cash gap and are repaid from surplus cash in subsequent years.
     SHL is interest-free and tracked as a separate liability.
+
+    Cash Sweep is supported for all spheres.  For toll-road the waterfall is:
+      senior debt sweep  →  SHL gap-fill / repayment.
     """
 
     def compute(self, inputs: dict, period: int) -> dict:
@@ -12,6 +15,7 @@ class CashFlow:
         shl_rate = float(inputs.get("shl_interest_rate", 0)) / 100
         vat_rate = float(inputs.get("vat_rate", 0)) / 100
         vat_factor = 1 + vat_rate
+        investment_years = int(inputs.get("investment_years", 0))
         net_income = inputs.get("net_income", [0.0] * (period + 1))
         depreciation = inputs.get("depreciation", [0.0] * (period + 1))
         amortization = inputs.get("amortization", [0.0] * (period + 1))
@@ -27,6 +31,20 @@ class CashFlow:
         cogs = inputs.get("cogs", [0.0] * (period + 1))
         opex = inputs.get("opex", [0.0] * (period + 1))
 
+        repayment_type = inputs.get("repayment_type", "Equal")
+        is_sweep = (repayment_type == "Sweep")
+        if is_sweep:
+            sweep_pct = float(inputs.get("sweep_pct", 100)) / 100
+            interest_rate = float(inputs.get("interest_rate", 0)) / 100
+            tax_rate = float(inputs.get("tax_rate", 0)) / 100
+            initial_debt_val = float(inputs.get("initial_debt", 0))
+            new_debt_annual_val = float(inputs.get("new_debt_annual", 0))
+            interest_expense_orig = inputs.get("interest_expense", [0.0] * (period + 1))
+            # Toll-road senior debt starts at 0 (initial_debt=0); generic starts at initial_debt
+            sweep_debt_bal = [initial_debt_val]
+            sweep_principal = [0.0]
+            sweep_interest = [0.0]
+
         operating_cf = [0.0]
         investing_cf = [0.0]
         financing_cf = [0.0]
@@ -40,10 +58,7 @@ class CashFlow:
         shl_interest = [0.0]
 
         for t in range(1, period + 1):
-            # Net VAT CF: input VAT recoverable on costs minus output VAT payable on revenue.
-            # Negative = net payment to the government; positive = VAT refund.
-            # VAT on revenue and on COGS/OpEx are each neutral (collected/paid then recovered/remitted).
-            # Only CapEx and major repair input VAT generates a real cash recovery.
+            # Net VAT CF: only CapEx / repair input VAT creates a real cash recovery.
             vat = (cogs[t] + opex[t] + capex[t] / vat_factor + major_repair[t] / vat_factor + revenue[t]) * vat_rate \
                   - revenue[t] * vat_rate \
                   - (cogs[t] + opex[t]) * vat_rate
@@ -64,19 +79,40 @@ class CashFlow:
             fcf = op + inv
 
             if sphere == "toll-road":
-                # SHL interest on prior-year balance (known, no circularity)
                 shl_int = shl_balance[t - 1] * shl_rate
-                # Pre-SHL cash position after all known flows incl. SHL interest payment
-                pre_shl = cash_balance[t - 1] + op + inv + fin_base - shl_int
                 prev_shl_bal = shl_balance[t - 1]
 
+                if is_sweep:
+                    # ── Adjust op for interest saving vs original DebtFinancing schedule ──
+                    prev_sweep_bal = sweep_debt_bal[t - 1]
+                    actual_int = prev_sweep_bal * interest_rate
+                    int_saving = interest_expense_orig[t] - actual_int
+                    op += int_saving * (1 - tax_rate)
+                    fcf = op + inv
+
+                    # ── Pre-SHL cash after senior debt sweep ──
+                    # fin_base: new_debt_issuance=drawdown, principal_repayment=0 (from DebtFinancing sweep)
+                    pre_sweep = cash_balance[t - 1] + op + inv + fin_base - shl_int
+                    # Sweep only in the operating phase; investment years fund drawdown, not repayment
+                    if t > investment_years:
+                        sweep_amt = min(sweep_pct * max(0.0, pre_sweep), prev_sweep_bal)
+                    else:
+                        sweep_amt = 0.0
+                    new_sweep_bal = max(0.0, prev_sweep_bal + new_debt_issuance[t] - sweep_amt)
+                    pre_shl = pre_sweep - sweep_amt
+                    sweep_debt_bal.append(new_sweep_bal)
+                    sweep_principal.append(sweep_amt)
+                    sweep_interest.append(actual_int)
+                else:
+                    # Equal / Bullet repayment — principal already in fin_base via DebtFinancing
+                    pre_shl = cash_balance[t - 1] + op + inv + fin_base - shl_int
+                    sweep_amt = 0.0
+
                 if pre_shl < 0:
-                    # Cash gap — shareholders inject a loan to cover it
                     draw = -pre_shl
                     repay = 0.0
                     cash = 0.0
                 elif prev_shl_bal > 0:
-                    # Surplus cash — repay SHL first
                     repay = min(prev_shl_bal, pre_shl)
                     draw = 0.0
                     cash = pre_shl - repay
@@ -86,14 +122,30 @@ class CashFlow:
                     cash = pre_shl
 
                 new_shl = max(0.0, prev_shl_bal + draw - repay)
-                fin = fin_base - shl_int + draw - repay
+                fin = fin_base - sweep_amt - shl_int + draw - repay
                 ncf = op + inv + fin
+
             else:
                 shl_int = 0.0
                 draw = 0.0
                 repay = 0.0
                 new_shl = 0.0
-                fin = fin_base
+
+                if is_sweep:
+                    prev_sweep_bal = sweep_debt_bal[t - 1]
+                    actual_int = prev_sweep_bal * interest_rate
+                    int_saving = interest_expense_orig[t] - actual_int
+                    op += int_saving * (1 - tax_rate)
+                    fcf = op + inv
+                    sweep_amt = min(sweep_pct * max(0.0, fcf), prev_sweep_bal)
+                    new_sweep_bal = max(0.0, prev_sweep_bal + new_debt_annual_val - sweep_amt)
+                    fin = fin_base - sweep_amt
+                    sweep_debt_bal.append(new_sweep_bal)
+                    sweep_principal.append(sweep_amt)
+                    sweep_interest.append(actual_int)
+                else:
+                    fin = fin_base
+
                 ncf = op + inv + fin
                 cash = cash_balance[t - 1] + ncf
 
@@ -109,7 +161,7 @@ class CashFlow:
             shl_balance.append(new_shl)
             shl_interest.append(shl_int)
 
-        return {
+        result = {
             "vat_cf": vat_cf,
             "operating_cf": operating_cf,
             "investing_cf": investing_cf,
@@ -122,3 +174,8 @@ class CashFlow:
             "shl_balance": shl_balance,
             "shl_interest": shl_interest,
         }
+        if is_sweep:
+            result["debt_balance"] = sweep_debt_bal
+            result["principal_repayment"] = sweep_principal
+            result["interest_expense"] = sweep_interest
+        return result
