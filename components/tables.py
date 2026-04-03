@@ -63,7 +63,7 @@ def build_table(
 
     columns = [{"name": "Line Item", "id": "Line Item", "type": "text"}]
     if show_sum:
-        columns.append({"name": "Sum", "id": "Sum", "type": "numeric", "format": {"specifier": ",.2f"}})
+        columns.append({"name": "Sum", "id": "Sum", "type": "numeric", "format": {"specifier": ",.0f"}})
 
     for t in range(period + 1):
         columns.append(
@@ -71,7 +71,7 @@ def build_table(
                 "name": _col_display_name(t, investment_years),
                 "id": f"Year {t}",
                 "type": "numeric",
-                "format": {"specifier": ",.2f"},
+                "format": {"specifier": ",.0f"},
             }
         )
 

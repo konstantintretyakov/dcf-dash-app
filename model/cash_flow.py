@@ -40,10 +40,15 @@ class CashFlow:
             initial_debt_val = float(inputs.get("initial_debt", 0))
             new_debt_annual_val = float(inputs.get("new_debt_annual", 0))
             interest_expense_orig = inputs.get("interest_expense", [0.0] * (period + 1))
+            ebit = inputs.get("ebit", [0.0] * (period + 1))
+            dividends_pct = float(inputs.get("dividends_pct", 0)) / 100
             # Toll-road senior debt starts at 0 (initial_debt=0); generic starts at initial_debt
             sweep_debt_bal = [initial_debt_val]
             sweep_principal = [0.0]
             sweep_interest = [0.0]
+            sweep_net_income = [0.0]
+            sweep_dividends = [0.0]
+            sweep_retained = [0.0]
 
         operating_cf = [0.0]
         investing_cf = [0.0]
@@ -83,12 +88,26 @@ class CashFlow:
                 prev_shl_bal = shl_balance[t - 1]
 
                 if is_sweep:
-                    # ── Adjust op for interest saving vs original DebtFinancing schedule ──
+                    # ── Recompute net income & dividends with actual sweep interest ──
                     prev_sweep_bal = sweep_debt_bal[t - 1]
                     actual_int = prev_sweep_bal * interest_rate
-                    int_saving = interest_expense_orig[t] - actual_int
-                    op += int_saving * (1 - tax_rate)
+                    taxable = ebit[t] - actual_int
+                    ni = taxable - max(0.0, taxable * tax_rate)
+                    div = max(0.0, ni) * dividends_pct
+                    re = sweep_retained[t - 1] + ni - div
+                    sweep_net_income.append(ni)
+                    sweep_dividends.append(div)
+                    sweep_retained.append(re)
+
+                    # ── Rebuild op & fin_base with corrected values ──
+                    op = ni + depreciation[t] + amortization[t] - change_in_wc[t] + vat
                     fcf = op + inv
+                    fin_base = (
+                        new_debt_issuance[t]
+                        - principal_repayment[t]
+                        + equity_injections[t]
+                        - div
+                    )
 
                     # ── Pre-SHL cash after senior debt sweep ──
                     # fin_base: new_debt_issuance=drawdown, principal_repayment=0 (from DebtFinancing sweep)
@@ -134,8 +153,22 @@ class CashFlow:
                 if is_sweep:
                     prev_sweep_bal = sweep_debt_bal[t - 1]
                     actual_int = prev_sweep_bal * interest_rate
-                    int_saving = interest_expense_orig[t] - actual_int
-                    op += int_saving * (1 - tax_rate)
+                    # Recompute net income & dividends with actual sweep interest
+                    taxable = ebit[t] - actual_int
+                    ni = taxable - max(0.0, taxable * tax_rate)
+                    div = max(0.0, ni) * dividends_pct
+                    re = sweep_retained[t - 1] + ni - div
+                    sweep_net_income.append(ni)
+                    sweep_dividends.append(div)
+                    sweep_retained.append(re)
+                    # Rebuild op & fin_base with corrected values
+                    op = ni + depreciation[t] + amortization[t] - change_in_wc[t] + vat
+                    fin_base = (
+                        new_debt_issuance[t]
+                        - principal_repayment[t]
+                        + equity_injections[t]
+                        - div
+                    )
                     fcf = op + inv
                     sweep_amt = min(sweep_pct * max(0.0, fcf), prev_sweep_bal)
                     new_sweep_bal = max(0.0, prev_sweep_bal + new_debt_annual_val - sweep_amt)
@@ -178,4 +211,10 @@ class CashFlow:
             result["debt_balance"] = sweep_debt_bal
             result["principal_repayment"] = sweep_principal
             result["interest_expense"] = sweep_interest
+            result["net_income"] = sweep_net_income
+            result["dividends"] = sweep_dividends
+            result["retained_earnings"] = sweep_retained
+            # Recompute EBT for P&L consistency
+            result["ebt"] = [ebit[t] - sweep_interest[t] if t < len(sweep_interest) else 0.0
+                             for t in range(period + 1)]
         return result

@@ -36,6 +36,7 @@ class DCFModel:
             "investment_years": investment_years,
             "operating_years": operating_years,
             "vat_rate": float(inputs.get("vat_rate", 0)),
+            "wacc": float(inputs.get("wacc", 10)),
         }
 
         def merged(extra=None):
