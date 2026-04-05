@@ -59,7 +59,7 @@ SPHERE_DEFAULTS = {
         "dio": 45,
         "tax_rate": 25,
         "initial_debt": 0.3,
-        "interest_rate": 6,
+        "interest_rate": 11,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
         "sweep_pct": 100,
@@ -93,7 +93,7 @@ SPHERE_DEFAULTS = {
         "dio": 0,
         "tax_rate": 25,
         "initial_debt": 0,
-        "interest_rate": 5,
+        "interest_rate": 11,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
         "sweep_pct": 100,
@@ -132,7 +132,7 @@ SPHERE_DEFAULTS = {
         "dio": 120,                          # long harvest & storage cycle
         "tax_rate": 25,
         "initial_debt": 0.35,
-        "interest_rate": 6,
+        "interest_rate": 11,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
         "sweep_pct": 100,
@@ -167,7 +167,7 @@ SPHERE_DEFAULTS = {
         "dio": 30,
         "tax_rate": 25,
         "initial_debt": 3.0,
-        "interest_rate": 6,
+        "interest_rate": 11,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
         "sweep_pct": 100,
@@ -201,7 +201,7 @@ SPHERE_DEFAULTS = {
         "dio": 10,
         "tax_rate": 25,
         "initial_debt": 6.0,
-        "interest_rate": 5,
+        "interest_rate": 11,
         "repayment_type": "Equal",
         "new_debt_annual": 0,
         "sweep_pct": 100,
@@ -898,7 +898,11 @@ def update_all_tabs(results):
         "Net Fixed Assets (₽M)": results.get("net_fixed_assets", []),
         "Net Intangibles (₽M)": results.get("net_intangibles", []),
     }
-    fa_tab = tab_layout(tbl(fa_items, "tbl-fa"), fa_chart(results))
+    fa_skip = {"Net Fixed Assets (₽M)", "Net Intangibles (₽M)"}
+    fa_tab = tab_layout(
+        build_table(fa_items, period, "tbl-fa", investment_years=inv, skip_sum=fa_skip),
+        fa_chart(results),
+    )
 
     # ── Working Capital ──
     wc_items = {
@@ -935,7 +939,11 @@ def update_all_tabs(results):
         "SHL Interest (₽M)": results.get("shl_interest", []),
         "SHL Balance (₽M)": results.get("shl_balance", []),
     }
-    debt_tab = tab_layout(tbl(debt_items, "tbl-debt"), debt_chart(results))
+    debt_skip = {"Senior Debt Balance (₽M)", "SHL Balance (₽M)"}
+    debt_tab = tab_layout(
+        build_table(debt_items, period, "tbl-debt", investment_years=inv, skip_sum=debt_skip),
+        debt_chart(results),
+    )
 
     # ── Equity ──
     equity_items = {

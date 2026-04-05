@@ -6,8 +6,6 @@ class FixedAssetsAndIntangibles:
         capex_pct_schedule = inputs.get("capex_pct_schedule", [])   # list of % per inv year
         investment_years = int(inputs.get("investment_years", 0))
         intangibles_amt = float(inputs.get("intangibles_investment", 0))
-        useful_life = max(1, int(inputs.get("useful_life_years", 10)))
-        amort_period = max(1, int(inputs.get("amortization_period", 5)))
         repair_interval = int(inputs.get("repair_interval", 0))
         repair_cost = float(inputs.get("repair_cost", 0))
         repair_growth = float(inputs.get("repair_growth_rate", 0)) / 100
@@ -29,9 +27,6 @@ class FixedAssetsAndIntangibles:
         amortization = [0.0]
         nfa = [opening_nfa]
         net_intangibles = [0.0]
-        cumulative_capex = opening_nfa  # seed depreciation pool with opening NFA
-        cumulative_intang = 0.0
-
         for t in range(1, period + 1):
             # CapEx only during investment phase, distributed by % schedule
             if t <= investment_years:
@@ -54,14 +49,20 @@ class FixedAssetsAndIntangibles:
             annual_capex_excl = annual_capex / vat_factor
             repair_excl = repair / vat_factor
 
-            cumulative_capex += annual_capex_excl + repair_excl
-            cumulative_intang += intangibles_amt
+            nfa_before_dep = nfa[t - 1] + annual_capex_excl + repair_excl
+            intang_before_amort = net_intangibles[t - 1] + intangibles_amt
 
-            dep = cumulative_capex / useful_life
-            amort = cumulative_intang / amort_period
+            # D&A only during operating phase; spread over remaining operating periods
+            if t > investment_years:
+                remaining_op = period - t + 1
+                dep = nfa_before_dep / remaining_op if remaining_op > 0 else nfa_before_dep
+                amort = intang_before_amort / remaining_op if remaining_op > 0 else intang_before_amort
+            else:
+                dep = 0.0
+                amort = 0.0
 
-            new_nfa = max(0.0, nfa[t - 1] + annual_capex_excl + repair_excl - dep)
-            new_intang = max(0.0, net_intangibles[t - 1] + intangibles_amt - amort)
+            new_nfa = max(0.0, nfa_before_dep - dep)
+            new_intang = max(0.0, intang_before_amort - amort)
 
             capex.append(annual_capex)
             major_repair.append(repair)

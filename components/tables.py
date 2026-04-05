@@ -40,6 +40,7 @@ def build_table(
     table_id: str = "table",
     investment_years: int = 0,
     show_sum: bool = True,
+    skip_sum: set | None = None,
 ) -> dash_table.DataTable:
     """Build a DataTable with rows=line items, columns=Sum / Base / Inv N / Op N.
 
@@ -53,7 +54,10 @@ def build_table(
     for label, values in line_items.items():
         row = {"Line Item": label}
         if show_sum:
-            row["Sum"] = sum(values[t] if t < len(values) else 0.0 for t in range(1, period + 1))
+            if skip_sum and label in skip_sum:
+                row["Sum"] = ""
+            else:
+                row["Sum"] = sum(values[t] if t < len(values) else 0.0 for t in range(1, period + 1))
         for t in range(period + 1):
             row[f"Year {t}"] = values[t] if t < len(values) else 0.0
         rows.append(row)
