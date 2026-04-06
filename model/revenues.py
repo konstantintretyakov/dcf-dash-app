@@ -9,13 +9,16 @@ class Revenues:
         base_revenue = float(inputs.get("base_revenue", 0))
         growth_rate = float(inputs.get("revenue_growth_rate", 0)) / 100
         investment_years = int(inputs.get("investment_years", 0))
+        # revenue_start_year: 1-indexed within total horizon; defaults to first operating year.
+        # For mining with overlap, can be set to a year within the investment phase.
+        revenue_start_year = int(inputs.get("revenue_start_year", investment_years + 1))
 
         revenue = [0.0]  # Year 0: always zero (base year)
         for t in range(1, period + 1):
-            if t <= investment_years:
-                revenue.append(0.0)          # investment phase: no revenue yet
+            if t < revenue_start_year:
+                revenue.append(0.0)
             else:
-                op_year = t - investment_years   # 1-indexed within operating phase
+                op_year = t - revenue_start_year + 1   # 1-indexed within operating phase
                 revenue.append(base_revenue * (1 + growth_rate) ** (op_year - 1))
 
         return {"revenue": revenue}

@@ -148,8 +148,9 @@ SPHERE_DEFAULTS = {
         "initial_investment": 0,
     },
     "mining": {
-        # Extractive industry; Year-0 capex already embedded in opening NFA;
-        # ongoing sustaining capex is low, making annual FCF strongly positive.
+        # Extractive industry; investment and operating phases may overlap.
+        # revenue_start_year: year within total horizon when production begins (≤ investment_years for overlap).
+        "revenue_start_year": 3,
         "repair_interval": 6,
         "repair_cost": 3949,
         "repair_growth_rate": 4.1,
@@ -493,6 +494,25 @@ def build_inputs_tab():
                         ),
                     ], md=2, className="mb-3"),
                 ]),
+                html.Div(id="div-mining-overlap", style={"display": "none"}, children=[
+                    section_header("⛏️ Mining: Phase Overlap"),
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label("Revenue Start Year", className="fw-semibold small"),
+                            dbc.InputGroup([
+                                dbc.Input(
+                                    id="inp-revenue-start-year",
+                                    type="number",
+                                    value=3,
+                                    min=1, step=1,
+                                    debounce=True,
+                                ),
+                                dbc.InputGroupText("yr"),
+                            ], size="sm"),
+                            dbc.FormText("Year within total horizon when production begins (≤ investment years = overlap)"),
+                        ], md=6, className="mb-3"),
+                    ]),
+                ]),
             ], md=6),
         ]),
 
@@ -649,12 +669,15 @@ def update_total_years_badge(inv, op):
     Output("div-revenue-growth", "style"),
     Output("div-toll-growth", "style"),
     Output("div-capital-grant", "style"),
+    Output("div-mining-overlap", "style"),
     Input("inp-sphere", "value"),
 )
 def toggle_revenue_inputs(sphere):
     if sphere == "toll-road":
-        return {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "block"}
-    return {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "none"}
+        return {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "block"}, {"display": "none"}
+    if sphere == "mining":
+        return {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "none"}, {"display": "block"}
+    return {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "none"}, {"display": "none"}
 
 
 @callback(
@@ -706,6 +729,7 @@ def update_computed_revenue(adt, tariff, length):
     Output("inp-repair-cost", "value"),
     Output("inp-repair-growth-rate", "value"),
     Output("inp-shl-interest-rate", "value"),
+    Output("inp-revenue-start-year", "value"),
     Input("inp-sphere", "value"),
 )
 def update_sphere_inputs(sphere):
@@ -745,6 +769,7 @@ def update_sphere_inputs(sphere):
         d.get("repair_cost", 0),
         d.get("repair_growth_rate", 0),
         d.get("shl_interest_rate", 13),
+        d.get("revenue_start_year", d["investment_years"] + 1),
     )
 
 
@@ -868,6 +893,7 @@ def toggle_vat_detail(_, is_open):
     State("inp-traffic-growth", "value"),
     State({"type": "capex-pct", "index": ALL}, "value"),
     State({"type": "capital-grant", "index": ALL}, "value"),
+    State("inp-revenue-start-year", "value"),
     prevent_initial_call=False,
 )
 def run_model(n_clicks, *args):
@@ -892,6 +918,7 @@ def run_model(n_clicks, *args):
     traffic_growth = args[len(keys) + 5]
     capex_pct_values = args[len(keys) + 6]
     capital_grant_values = args[len(keys) + 7]
+    revenue_start_year = args[len(keys) + 8]
 
     inputs = {}
     for key, val in zip(keys, args):
@@ -900,6 +927,12 @@ def run_model(n_clicks, *args):
     inputs["capital_grant_schedule"] = [float(v or 0) for v in (capital_grant_values or [])]
     inputs["intangibles_investment"] = 0
     inputs["sphere"] = sphere
+
+    inv_years = int(inputs.get("investment_years", 0))
+    if sphere == "mining" and revenue_start_year is not None:
+        inputs["revenue_start_year"] = int(revenue_start_year)
+    else:
+        inputs["revenue_start_year"] = inv_years + 1
 
     if sphere == "toll-road":
         inputs["base_revenue"] = (

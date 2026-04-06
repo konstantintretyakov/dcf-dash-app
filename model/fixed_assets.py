@@ -5,6 +5,8 @@ class FixedAssetsAndIntangibles:
         total_capex = float(inputs.get("total_capex", 0))
         capex_pct_schedule = inputs.get("capex_pct_schedule", [])   # list of % per inv year
         investment_years = int(inputs.get("investment_years", 0))
+        # For mining overlap: D&A starts from revenue_start_year, not necessarily investment_years+1
+        revenue_start_year = int(inputs.get("revenue_start_year", investment_years + 1))
         intangibles_amt = float(inputs.get("intangibles_investment", 0))
         repair_interval = int(inputs.get("repair_interval", 0))
         repair_cost = float(inputs.get("repair_cost", 0))
@@ -52,8 +54,8 @@ class FixedAssetsAndIntangibles:
             nfa_before_dep = nfa[t - 1] + annual_capex_excl + repair_excl
             intang_before_amort = net_intangibles[t - 1] + intangibles_amt
 
-            # D&A only during operating phase; spread over remaining operating periods
-            if t > investment_years:
+            # D&A starts from revenue_start_year (asset commissioning), spread over remaining period
+            if t >= revenue_start_year:
                 remaining_op = period - t + 1
                 dep = nfa_before_dep / remaining_op if remaining_op > 0 else nfa_before_dep
                 amort = intang_before_amort / remaining_op if remaining_op > 0 else intang_before_amort
