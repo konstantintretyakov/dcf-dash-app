@@ -577,3 +577,134 @@ def irr_gauge_chart(results: dict) -> go.Figure:
 
     fig.update_layout(margin=dict(l=30, r=30, t=60, b=30), paper_bgcolor="white")
     return fig
+
+
+# ─────────────────────────────────────────────
+# Monte Carlo – NPV Distribution
+# ─────────────────────────────────────────────
+def mc_npv_chart(mc: dict) -> go.Figure:
+    npv = mc.get("mc_npv", [])
+    p10 = mc.get("mc_npv_p10", 0)
+    p50 = mc.get("mc_npv_p50", 0)
+    p90 = mc.get("mc_npv_p90", 0)
+    n   = mc.get("mc_n", len(npv))
+
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(
+        x=npv,
+        nbinsx=60,
+        name="NPV",
+        marker_color=TEAL_COLORS[0],
+        opacity=0.75,
+        hovertemplate="NPV: ₽%{x:,.1f}M<br>Count: %{y}<extra></extra>",
+    ))
+
+    line_specs = [
+        (0,   "#2c3e50", "solid", "Break-even"),
+        (p10, RED_COLOR,         "dash", f"P10 ₽{p10:,.1f}M"),
+        (p50, BLUE_COLORS[0],   "dash", f"P50 ₽{p50:,.1f}M"),
+        (p90, GREEN_COLOR,       "dash", f"P90 ₽{p90:,.1f}M"),
+    ]
+    y_positions = [0.97, 0.80, 0.63, 0.46]
+    for (x_val, color, dash, label), y_pos in zip(line_specs, y_positions):
+        fig.add_vline(x=x_val, line_width=2, line_color=color, line_dash=dash)
+        fig.add_annotation(
+            x=x_val, y=y_pos, xref="x", yref="paper",
+            text=label, font=dict(size=10, color=color),
+            showarrow=False, xanchor="left", xshift=4,
+            bgcolor="white", bordercolor=color, borderwidth=1, borderpad=2,
+        )
+
+    fig.update_layout(
+        title=f"NPV Distribution  ({n:,} iterations)",
+        xaxis_title="NPV (₽M)",
+        yaxis_title="Frequency",
+        showlegend=False,
+        **LAYOUT_BASE,
+    )
+    return fig
+
+
+# ─────────────────────────────────────────────
+# Monte Carlo – IRR Distribution
+# ─────────────────────────────────────────────
+def mc_irr_chart(mc: dict) -> go.Figure:
+    irr  = mc.get("mc_irr", [])
+    p10  = mc.get("mc_irr_p10", 0)
+    p50  = mc.get("mc_irr_p50", 0)
+    p90  = mc.get("mc_irr_p90", 0)
+    wacc = mc.get("mc_base_wacc", 10)
+    n    = mc.get("mc_n", 0)
+
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(
+        x=irr,
+        nbinsx=60,
+        name="IRR",
+        marker_color=BLUE_COLORS[0],
+        opacity=0.75,
+        hovertemplate="IRR: %{x:.2f}%<br>Count: %{y}<extra></extra>",
+    ))
+
+    line_specs = [
+        (wacc, RED_COLOR,      "solid", f"WACC {wacc:.1f}%"),
+        (p10,  ORANGE_COLOR,   "dash",  f"P10 {p10:.1f}%"),
+        (p50,  BLUE_COLORS[2], "dash",  f"P50 {p50:.1f}%"),
+        (p90,  GREEN_COLOR,    "dash",  f"P90 {p90:.1f}%"),
+    ]
+    y_positions = [0.97, 0.80, 0.63, 0.46]
+    for (x_val, color, dash, label), y_pos in zip(line_specs, y_positions):
+        fig.add_vline(x=x_val, line_width=2, line_color=color, line_dash=dash)
+        fig.add_annotation(
+            x=x_val, y=y_pos, xref="x", yref="paper",
+            text=label, font=dict(size=10, color=color),
+            showarrow=False, xanchor="left", xshift=4,
+            bgcolor="white", bordercolor=color, borderwidth=1, borderpad=2,
+        )
+
+    fig.update_layout(
+        title=f"IRR Distribution  ({len(irr):,} valid of {n:,})",
+        xaxis_title="IRR (%)",
+        yaxis_title="Frequency",
+        showlegend=False,
+        **LAYOUT_BASE,
+    )
+    return fig
+
+
+# ─────────────────────────────────────────────
+# Monte Carlo – Contribution to NPV Variance
+# ─────────────────────────────────────────────
+def mc_contribution_chart(mc: dict) -> go.Figure:
+    contribs = mc.get("mc_contributions", [])
+    if not contribs:
+        fig = go.Figure()
+        fig.update_layout(title="Contribution to NPV Variance — no data", **LAYOUT_BASE)
+        return fig
+
+    labels = [c["label"] for c in contribs]
+    pcts   = [c["pct"]   for c in contribs]
+    r2s    = [c["r2"]    for c in contribs]
+
+    colors = [TEAL_COLORS[min(i, len(TEAL_COLORS) - 1)] for i in range(len(labels))]
+
+    fig = go.Figure(go.Bar(
+        y=labels,
+        x=pcts,
+        orientation="h",
+        marker_color=colors,
+        text=[f"{p:.1f}%  (R²={r:.3f})" for p, r in zip(pcts, r2s)],
+        textposition="outside",
+        textfont=dict(size=10),
+        hovertemplate="%{y}: %{x:.1f}% of NPV variance<extra></extra>",
+    ))
+
+    fig.update_layout(
+        title="Contribution to NPV Variance by Driver (Pearson R²)",
+        xaxis_title="% of Total NPV Variance Explained",
+        xaxis=dict(range=[0, max(pcts) * 1.25]),
+        yaxis=dict(autorange="reversed"),
+        showlegend=False,
+        **LAYOUT_BASE,
+    )
+    return fig

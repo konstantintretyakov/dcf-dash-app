@@ -17,9 +17,10 @@ from components.charts import (
     revenue_chart, opex_chart, fa_chart, wc_chart, tax_chart,
     debt_chart, equity_chart, pnl_chart, cashflow_chart,
     balance_sheet_chart, fcf_chart, npv_sensitivity_chart, irr_gauge_chart,
-    tornado_chart,
+    tornado_chart, mc_npv_chart, mc_irr_chart, mc_contribution_chart,
 )
 from model.tornado import compute_tornado
+from model.monte_carlo import compute_mc
 
 # ─────────────────────────────────────────────
 # App Initialisation
@@ -526,6 +527,61 @@ def kpi_card(title, value_id, icon, color):
 
 
 # ─────────────────────────────────────────────
+# Monte Carlo tab – static controls panel
+# ─────────────────────────────────────────────
+def _build_mc_controls():
+    driver_note = (
+        "Base Revenue (lognormal, CV=10%) · Revenue Growth (normal, σ=2pp) · "
+        "COGS % (normal, σ=3pp) · OpEx % (normal, σ=3pp) · "
+        "Total CapEx (lognormal, CV=15%) · WACC (normal, σ=1.5pp) · "
+        "Tax Rate (uniform, ±5pp)"
+    )
+    return dbc.Container([
+        dbc.Card([
+            dbc.CardBody([
+                html.H6("🎲 Monte Carlo Simulation Settings",
+                        className="text-primary fw-bold mb-3"),
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Label("Number of Iterations", className="fw-semibold small"),
+                        dcc.Slider(
+                            id="inp-mc-iterations",
+                            min=500, max=10000, step=500,
+                            value=2000,
+                            marks={500: "500", 1000: "1 000", 2000: "2 000",
+                                   5000: "5 000", 10000: "10 000"},
+                            tooltip={"placement": "bottom", "always_visible": False},
+                        ),
+                    ], md=6),
+                    dbc.Col([
+                        dbc.Button(
+                            "🎲 Run Monte Carlo",
+                            id="btn-run-mc",
+                            color="primary",
+                            size="lg",
+                            className="w-100 fw-bold mt-2",
+                            n_clicks=0,
+                        ),
+                    ], md=3, className="d-flex align-items-end"),
+                    dbc.Col([
+                        html.Div(id="mc-status", className="mt-2"),
+                    ], md=3, className="d-flex align-items-end"),
+                ]),
+                html.Small(
+                    ["Sampled drivers: ", html.Em(driver_note)],
+                    className="text-muted mt-2 d-block",
+                ),
+            ]),
+        ], className="mb-4 border-primary", style={"borderWidth": "2px"}),
+        dcc.Loading(
+            html.Div(id="tab-mc-content"),
+            type="circle",
+            color="#1abc9c",
+        ),
+    ], fluid=True, className="py-3")
+
+
+# ─────────────────────────────────────────────
 # App Layout
 # ─────────────────────────────────────────────
 NAVBAR = dbc.Navbar(
@@ -560,6 +616,7 @@ TABS = dbc.Tabs(
         dbc.Tab(html.Div(id="tab-cf-content"), label="💰 Cash Flow", tab_id="tab-cf"),
         dbc.Tab(html.Div(id="tab-bs-content"), label="⚖️ Balance Sheet", tab_id="tab-bs"),
         dbc.Tab(html.Div(id="tab-eval-content"), label="🎯 Evaluation", tab_id="tab-eval"),
+        dbc.Tab(_build_mc_controls(), label="🎲 Monte Carlo", tab_id="tab-mc"),
     ],
     active_tab="tab-inputs",
     className="mt-0",
@@ -772,6 +829,7 @@ def toggle_vat_detail(_, is_open):
 @callback(
     Output("store-results", "data"),
     Output("run-status", "children"),
+    Output("store-inputs", "data"),
     Input("btn-run", "n_clicks"),
     State("inp-investment-years", "value"),
     State("inp-operating-years", "value"),
@@ -857,10 +915,10 @@ def run_model(n_clicks, *args):
         results.update(tornado_data)
         status = dbc.Alert("✅ Model computed successfully.", color="success",
                            dismissable=True, duration=3000, className="py-1")
-        return results, status
+        return results, status, inputs
     except Exception as e:
         status = dbc.Alert(f"❌ Error: {str(e)}", color="danger", dismissable=True)
-        return {}, status
+        return {}, status, {}
 
 
 # ─────────────────────────────────────────────
@@ -1253,6 +1311,96 @@ def update_all_tabs(results):
         rev_tab, opex_tab, fa_tab, wc_tab, tax_tab,
         debt_tab, equity_tab, pnl_tab, cf_tab, bs_tab, eval_tab,
     )
+
+
+# ─────────────────────────────────────────────
+# Callback: Run Monte Carlo
+# ─────────────────────────────────────────────
+@callback(
+    Output("tab-mc-content", "children"),
+    Output("mc-status", "children"),
+    Input("btn-run-mc", "n_clicks"),
+    State("store-inputs", "data"),
+    State("inp-mc-iterations", "value"),
+    prevent_initial_call=True,
+)
+def run_mc(n_clicks, base_inputs, n_iter):
+    if not base_inputs:
+        return (
+            dbc.Alert(
+                "Run the main model first (▶ Run Model on the Inputs tab).",
+                color="warning", className="m-4",
+            ),
+            None,
+        )
+
+    n = int(n_iter or 2000)
+    mc = compute_mc(base_inputs, n_iterations=n)
+
+    prob_pos     = mc["mc_prob_npv_pos"]
+    prob_irr     = mc["mc_prob_irr_wacc"]
+    p10, p50, p90 = mc["mc_npv_p10"], mc["mc_npv_p50"], mc["mc_npv_p90"]
+    irr_inv_n    = mc["mc_irr_invalid_n"]
+    irr_inv_pct  = mc["mc_irr_invalid_pct"]
+
+    def _prob_color(pct):
+        return "success" if pct >= 70 else "warning" if pct >= 50 else "danger"
+
+    def _inv_color(pct):
+        return "success" if pct < 5 else "warning" if pct < 20 else "danger"
+
+    kpi_row = dbc.Row([
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("P(NPV ≥ 0)", className="text-muted small mb-1"),
+            html.H3(f"{prob_pos:.1f}%",
+                    className=f"fw-bold text-{_prob_color(prob_pos)} mb-0"),
+        ]), className="shadow-sm text-center h-100"), md=2),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("P(IRR ≥ WACC)", className="text-muted small mb-1"),
+            html.H3(f"{prob_irr:.1f}%",
+                    className=f"fw-bold text-{_prob_color(prob_irr)} mb-0"),
+        ]), className="shadow-sm text-center h-100"), md=2),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("IRR Undefined", className="text-muted small mb-1"),
+            html.H3(f"{irr_inv_pct:.1f}%",
+                    className=f"fw-bold text-{_inv_color(irr_inv_pct)} mb-0"),
+            html.Small(f"{irr_inv_n:,} of {n:,} iterations",
+                       className="text-muted"),
+        ]), className="shadow-sm text-center h-100"), md=2),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("NPV  P10", className="text-muted small mb-1"),
+            html.H3(fmt_currency(p10),
+                    className=f"fw-bold text-{'success' if p10 >= 0 else 'danger'} mb-0"),
+        ]), className="shadow-sm text-center h-100"), md=2),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("NPV  P50  (median)", className="text-muted small mb-1"),
+            html.H3(fmt_currency(p50),
+                    className=f"fw-bold text-{'success' if p50 >= 0 else 'danger'} mb-0"),
+        ]), className="shadow-sm text-center h-100"), md=2),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("NPV  P90", className="text-muted small mb-1"),
+            html.H3(fmt_currency(p90),
+                    className=f"fw-bold text-{'success' if p90 >= 0 else 'danger'} mb-0"),
+        ]), className="shadow-sm text-center h-100"), md=2),
+    ], className="mb-4 g-3")
+
+    content = dbc.Container([
+        kpi_row,
+        dbc.Row([
+            dbc.Col(dcc.Graph(figure=mc_npv_chart(mc), config={"displayModeBar": True}), md=7),
+            dbc.Col(dcc.Graph(figure=mc_irr_chart(mc), config={"displayModeBar": True}), md=5),
+        ], className="mb-3"),
+        dbc.Row([
+            dbc.Col(dcc.Graph(figure=mc_contribution_chart(mc),
+                              config={"displayModeBar": True}), md=12),
+        ]),
+    ], fluid=True, className="py-2")
+
+    status = dbc.Alert(
+        f"✅ Monte Carlo complete — {n:,} iterations.", color="success",
+        dismissable=True, duration=4000, className="py-1",
+    )
+    return content, status
 
 
 # ─────────────────────────────────────────────
