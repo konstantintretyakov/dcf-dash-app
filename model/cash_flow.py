@@ -30,6 +30,7 @@ class CashFlow:
         revenue = inputs.get("revenue", [0.0] * (period + 1))
         cogs = inputs.get("cogs", [0.0] * (period + 1))
         opex = inputs.get("opex", [0.0] * (period + 1))
+        capital_grant = inputs.get("capital_grant", [0.0] * (period + 1))
 
         repayment_type = inputs.get("repayment_type", "Equal")
         is_sweep = (repayment_type == "Sweep")
@@ -80,6 +81,7 @@ class CashFlow:
                 - principal_repayment[t]
                 + equity_injections[t]
                 - dividends[t]
+                + capital_grant[t]
             )
             fcf = op + inv
 
@@ -107,6 +109,7 @@ class CashFlow:
                         - principal_repayment[t]
                         + equity_injections[t]
                         - div
+                        + capital_grant[t]
                     )
 
                     # ── Pre-SHL cash after senior debt sweep ──
@@ -168,6 +171,7 @@ class CashFlow:
                         - principal_repayment[t]
                         + equity_injections[t]
                         - div
+                        + capital_grant[t]
                     )
                     fcf = op + inv
                     sweep_amt = min(sweep_pct * max(0.0, fcf), prev_sweep_bal)

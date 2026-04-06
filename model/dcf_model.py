@@ -45,6 +45,18 @@ class DCFModel:
                 base.update(extra)
             return base
 
+        # 0. Capital Grant schedule → per-year array
+        grant_schedule = inputs.get("capital_grant_schedule", [])
+        capital_grant = [0.0]
+        for t in range(1, period + 1):
+            g = grant_schedule[t - 1] if t <= len(grant_schedule) and t <= investment_years else 0.0
+            capital_grant.append(g)
+        cumulative_capital_grant = [0.0]
+        for t in range(1, period + 1):
+            cumulative_capital_grant.append(cumulative_capital_grant[t - 1] + capital_grant[t])
+        results["capital_grant"] = capital_grant
+        results["cumulative_capital_grant"] = cumulative_capital_grant
+
         # 1. Revenues
         results.update(self.revenues.compute(merged(), period))
 

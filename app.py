@@ -108,6 +108,7 @@ SPHERE_DEFAULTS = {
         "road_length_km": 16.2,
         "tariff_growth_rate": 3.98,
         "traffic_growth_rate": 0.78,
+        "capital_grant_schedule": [0, 0, 0, 0],
     },
     "agriculture": {
         # Farm / agribusiness; long harvest cycles, seasonal inventory, lower tax
@@ -423,6 +424,13 @@ def build_inputs_tab():
                     input_group("Dividend Payout %", "inp-dividends-pct",
                                 DEFAULTS["dividends_pct"], suffix="%", step=1),
                 ]),
+                html.Div(id="div-capital-grant", style={"display": "none"}, children=[
+                    section_header("🏛️ Capital Grant"),
+                    html.Div([
+                        dbc.Label("Capital Grant by Investment Year (₽M)", className="fw-semibold small"),
+                        html.Div(id="div-capital-grant-inputs"),
+                    ]),
+                ]),
                 section_header("🎯 Valuation"),
                 dbc.Row([
                     input_group("WACC", "inp-wacc", DEFAULTS["wacc"], suffix="%", step=0.25),
@@ -581,12 +589,13 @@ def update_total_years_badge(inv, op):
     Output("div-toll-revenue", "style"),
     Output("div-revenue-growth", "style"),
     Output("div-toll-growth", "style"),
+    Output("div-capital-grant", "style"),
     Input("inp-sphere", "value"),
 )
 def toggle_revenue_inputs(sphere):
     if sphere == "toll-road":
-        return {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "block"}
-    return {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "none"}
+        return {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "block"}
+    return {"display": "block"}, {"display": "none"}, {"display": "block"}, {"display": "none"}, {"display": "none"}
 
 
 @callback(
@@ -706,6 +715,27 @@ def update_capex_pct_inputs(inv_years, sphere):
 
 
 @callback(
+    Output("div-capital-grant-inputs", "children"),
+    Input("inp-investment-years", "value"),
+    Input("inp-sphere", "value"),
+)
+def update_capital_grant_inputs(inv_years, sphere):
+    n = int(inv_years or 0)
+    if n == 0:
+        return html.P("No investment phase.", className="text-muted small fst-italic")
+    defaults_schedule = SPHERE_DEFAULTS.get(sphere, DEFAULTS).get("capital_grant_schedule", [])
+    rows = []
+    for i in range(1, n + 1):
+        default_val = defaults_schedule[i - 1] if i <= len(defaults_schedule) else 0
+        rows.append(input_group(
+            f"Year {i} (₽M)",
+            {"type": "capital-grant", "index": i},
+            default_val, step=0.01, min_val=0,
+        ))
+    return dbc.Row(rows)
+
+
+@callback(
     Output("div-capex-pct-sum", "children"),
     Input({"type": "capex-pct", "index": ALL}, "value"),
 )
@@ -777,6 +807,7 @@ def toggle_vat_detail(_, is_open):
     State("inp-tariff-growth", "value"),
     State("inp-traffic-growth", "value"),
     State({"type": "capex-pct", "index": ALL}, "value"),
+    State({"type": "capital-grant", "index": ALL}, "value"),
     prevent_initial_call=False,
 )
 def run_model(n_clicks, *args):
@@ -800,11 +831,13 @@ def run_model(n_clicks, *args):
     tariff_growth = args[len(keys) + 4]
     traffic_growth = args[len(keys) + 5]
     capex_pct_values = args[len(keys) + 6]
+    capital_grant_values = args[len(keys) + 7]
 
     inputs = {}
     for key, val in zip(keys, args):
         inputs[key] = val if val is not None else DEFAULTS.get(key, 0)
     inputs["capex_pct_schedule"] = [float(v or 0) for v in (capex_pct_values or [])]
+    inputs["capital_grant_schedule"] = [float(v or 0) for v in (capital_grant_values or [])]
     inputs["intangibles_investment"] = 0
     inputs["sphere"] = sphere
 
@@ -998,6 +1031,7 @@ def update_all_tabs(results):
         "  incl. VAT CF (₽M)": results.get("vat_cf", []),
         "Investing CF (₽M)": results.get("investing_cf", []),
         "Financing CF (₽M)": results.get("financing_cf", []),
+        "  incl. Capital Grant (₽M)": results.get("capital_grant", []),
         "  incl. SHL Drawdown (₽M)": results.get("shl_drawdown", []),
         "  incl. SHL Repayment (₽M)": results.get("shl_repayment", []),
         "  incl. SHL Interest (₽M)": results.get("shl_interest", []),
@@ -1058,6 +1092,7 @@ def update_all_tabs(results):
         "Shareholders' Loan Balance (₽M)": results.get("shl_balance", []),
         "Total Liabilities (₽M)": results.get("bs_total_liabilities", []),
         "Paid-in Capital (₽M)": results.get("paid_in_capital", []),
+        "Capital Grants (₽M)": results.get("cumulative_capital_grant", []),
         "Retained Earnings (₽M)": results.get("retained_earnings", []),
         "Total Equity (₽M)": results.get("bs_total_equity", []),
         "Total Liabilities & Equity (₽M)": [

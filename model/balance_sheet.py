@@ -11,6 +11,7 @@ class BalanceSheet:
         debt_balance = inputs.get("debt_balance", [0.0] * (period + 1))
         shl_balance = inputs.get("shl_balance", [0.0] * (period + 1))
         paid_in_capital = inputs.get("paid_in_capital", [0.0] * (period + 1))
+        cumulative_capital_grant = inputs.get("cumulative_capital_grant", [0.0] * (period + 1))
         retained_earnings = inputs.get("retained_earnings", [0.0] * (period + 1))
 
         total_assets = []
@@ -28,7 +29,7 @@ class BalanceSheet:
                 + net_intangibles[t]
             )
             tl = accounts_payable[t] + debt_balance[t] + shl_balance[t]
-            te = paid_in_capital[t] + retained_earnings[t]
+            te = paid_in_capital[t] + cumulative_capital_grant[t] + retained_earnings[t]
             diff = ta - (tl + te)
 
             total_assets.append(ta)
