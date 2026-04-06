@@ -456,6 +456,92 @@ def npv_sensitivity_chart(results: dict) -> go.Figure:
 
 
 # ─────────────────────────────────────────────
+# Tab 12 – Tornado Chart
+# ─────────────────────────────────────────────
+def tornado_chart(results: dict) -> go.Figure:
+    bars = results.get("tornado_bars", [])
+    base_npv = results.get("tornado_base_npv", 0) or 0
+
+    if not bars:
+        fig = go.Figure()
+        fig.update_layout(title="Tornado Chart — run the model first", **LAYOUT_BASE)
+        return fig
+
+    labels   = [b["label"]   for b in bars]
+    low_npvs = [b["low_npv"] for b in bars]
+    high_npvs= [b["high_npv"]for b in bars]
+
+    # Each driver: left edge = min(low, high), right edge = max(low, high)
+    lefts  = [min(lo, hi) for lo, hi in zip(low_npvs, high_npvs)]
+    rights = [max(lo, hi) for lo, hi in zip(low_npvs, high_npvs)]
+
+    n = len(bars)
+
+    def _hover(b, npv_val, is_low: bool):
+        direction = "low" if is_low else "high"
+        if b["mode"] == "pct":
+            inp = f"{b['low_val']:,.2f} {b['unit']}" if is_low else f"{b['high_val']:,.2f} {b['unit']}"
+        else:
+            inp = f"{b['low_val']:+.2f} {b['unit']}" if is_low else f"{b['high_val']:+.2f} {b['unit']}"
+        return f"{b['label']} ({direction}): {inp}<br>NPV: ₽{npv_val:,.1f}M"
+
+    hover_left  = [_hover(b, lefts[i],  low_npvs[i] <= high_npvs[i]) for i, b in enumerate(bars)]
+    hover_right = [_hover(b, rights[i], low_npvs[i] >  high_npvs[i]) for i, b in enumerate(bars)]
+
+    # Downside bar: from base_npv going left (negative width)
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        y=labels,
+        x=[lefts[i] - base_npv for i in range(n)],
+        base=[base_npv] * n,
+        orientation="h",
+        name="Downside",
+        marker_color=RED_COLOR,
+        hovertext=hover_left,
+        hoverinfo="text",
+        text=[f"₽{lefts[i]:,.1f}M" for i in range(n)],
+        textposition="outside",
+        textfont=dict(size=10),
+    ))
+
+    # Upside bar: from base_npv going right (positive width)
+    fig.add_trace(go.Bar(
+        y=labels,
+        x=[rights[i] - base_npv for i in range(n)],
+        base=[base_npv] * n,
+        orientation="h",
+        name="Upside",
+        marker_color=GREEN_COLOR,
+        hovertext=hover_right,
+        hoverinfo="text",
+        text=[f"₽{rights[i]:,.1f}M" for i in range(n)],
+        textposition="outside",
+        textfont=dict(size=10),
+    ))
+
+    # Vertical line at base NPV
+    fig.add_vline(
+        x=base_npv,
+        line_width=2,
+        line_color=BLUE_COLORS[0],
+        line_dash="dash",
+        annotation_text=f"Base NPV<br>₽{base_npv:,.1f}M",
+        annotation_position="top",
+        annotation_font=dict(size=10, color=BLUE_COLORS[0]),
+    )
+
+    fig.update_layout(
+        title="Tornado Chart — NPV Sensitivity by Driver (±one driver at a time)",
+        barmode="overlay",
+        xaxis_title="NPV (₽M)",
+        yaxis=dict(autorange="reversed"),
+        showlegend=True,
+        **LAYOUT_BASE,
+    )
+    return fig
+
+
+# ─────────────────────────────────────────────
 # Tab 12 – IRR vs WACC Gauge
 # ─────────────────────────────────────────────
 def irr_gauge_chart(results: dict) -> go.Figure:

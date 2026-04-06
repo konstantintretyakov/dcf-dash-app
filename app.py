@@ -17,7 +17,9 @@ from components.charts import (
     revenue_chart, opex_chart, fa_chart, wc_chart, tax_chart,
     debt_chart, equity_chart, pnl_chart, cashflow_chart,
     balance_sheet_chart, fcf_chart, npv_sensitivity_chart, irr_gauge_chart,
+    tornado_chart,
 )
+from model.tornado import compute_tornado
 
 # ─────────────────────────────────────────────
 # App Initialisation
@@ -851,12 +853,99 @@ def run_model(n_clicks, *args):
 
     try:
         results = dcf_model.run(inputs)
+        tornado_data = compute_tornado(inputs, float(results.get("npv", 0) or 0))
+        results.update(tornado_data)
         status = dbc.Alert("✅ Model computed successfully.", color="success",
                            dismissable=True, duration=3000, className="py-1")
         return results, status
     except Exception as e:
         status = dbc.Alert(f"❌ Error: {str(e)}", color="danger", dismissable=True)
         return {}, status
+
+
+# ─────────────────────────────────────────────
+# Helper: tornado driver ranges table
+# ─────────────────────────────────────────────
+def _tornado_ranges_table(results: dict):
+    bars = results.get("tornado_bars", [])
+    base_npv = results.get("tornado_base_npv", 0) or 0
+
+    if not bars:
+        return html.Div()
+
+    def _fmt_val(b, val):
+        """Format a driver input value for display."""
+        if b["mode"] == "pct":
+            return f"₽{val:,.2f}M"
+        else:
+            return f"{val:.2f}%"
+
+    def _pct_change(base_val, val):
+        """Return % change of driver value from base, as formatted string."""
+        if base_val == 0:
+            return ""
+        pct = (val - base_val) / abs(base_val) * 100
+        sign = "+" if pct >= 0 else ""
+        return f"{sign}{pct:.1f}%"
+
+    def _npv_badge(delta):
+        color = "success" if delta >= 0 else "danger"
+        sign  = "+" if delta >= 0 else ""
+        return dbc.Badge(f"{sign}₽{delta:,.1f}M", color=color,
+                         className="ms-1", style={"fontSize": "10px"})
+
+    def _scenario_cell(b, val, npv_delta):
+        pct_str = _pct_change(b["base_val"], val)
+        return html.Td([
+            html.Span(_fmt_val(b, val),
+                      style={"fontSize": "10px", "color": "#555"}),
+            html.Span(f" ({pct_str})",
+                      style={"fontSize": "10px", "color": "#999",
+                             "fontStyle": "italic"}),
+            html.Br(),
+            _npv_badge(npv_delta),
+        ], style={"textAlign": "right", "whiteSpace": "nowrap",
+                  "verticalAlign": "middle"})
+
+    header = html.Thead(html.Tr([
+        html.Th("Driver",      style={"fontSize": "11px", "whiteSpace": "nowrap"}),
+        html.Th("Base",        style={"fontSize": "11px", "textAlign": "right"}),
+        html.Th("Low",         style={"fontSize": "11px", "textAlign": "right"}),
+        html.Th("High",        style={"fontSize": "11px", "textAlign": "right"}),
+    ]), style={"backgroundColor": "#2c3e50", "color": "white"})
+
+    rows = []
+    for i, b in enumerate(bars):
+        low_delta  = b["low_npv"]  - base_npv
+        high_delta = b["high_npv"] - base_npv
+
+        rows.append(html.Tr([
+            html.Td(b["label"],
+                    style={"fontSize": "11px", "fontWeight": "600",
+                           "whiteSpace": "nowrap", "paddingRight": "8px",
+                           "verticalAlign": "middle"}),
+            html.Td(_fmt_val(b, b["base_val"]),
+                    style={"fontSize": "11px", "textAlign": "right",
+                           "color": "#555", "whiteSpace": "nowrap",
+                           "verticalAlign": "middle"}),
+            _scenario_cell(b, b["low_val"],  low_delta),
+            _scenario_cell(b, b["high_val"], high_delta),
+        ], style={"backgroundColor": "#f8f9fa" if i % 2 else "white"}))
+
+    return dbc.Card([
+        dbc.CardHeader(
+            html.Small("Tornado Driver Ranges", className="fw-bold text-primary"),
+            style={"padding": "6px 12px"},
+        ),
+        dbc.CardBody(
+            dbc.Table(
+                [header, html.Tbody(rows)],
+                bordered=False, size="sm", responsive=True,
+                className="mb-0",
+            ),
+            style={"padding": "0"},
+        ),
+    ], className="shadow-sm mt-2")
 
 
 # ─────────────────────────────────────────────
@@ -1153,6 +1242,10 @@ def update_all_tabs(results):
         ], className="mb-3"),
         dbc.Row([
             dbc.Col(dcc.Graph(figure=npv_sensitivity_chart(results)), md=12),
+        ], className="mb-3"),
+        dbc.Row([
+            dbc.Col(dcc.Graph(figure=tornado_chart(results)), md=8),
+            dbc.Col(_tornado_ranges_table(results), md=4),
         ]),
     ], fluid=True, className="py-3")
 

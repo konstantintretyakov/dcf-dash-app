@@ -68,6 +68,9 @@ class Evaluation:
         for w_delta in wacc_deltas:
             row = []
             for g_delta in growth_deltas:
+                if w_delta == 0.0 and g_delta == 0.0:
+                    row.append(round(npv, 0))
+                    continue
                 w = wacc + w_delta
                 g = base_growth + g_delta
                 sens_fcfs = [
