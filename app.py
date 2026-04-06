@@ -94,7 +94,7 @@ SPHERE_DEFAULTS = {
         "tax_rate": 25,
         "initial_debt": 0,
         "interest_rate": 11,
-        "repayment_type": "Equal",
+        "repayment_type": "Sweep",
         "new_debt_annual": 0,
         "sweep_pct": 100,
         "initial_equity": 0.01,
@@ -108,7 +108,7 @@ SPHERE_DEFAULTS = {
         "road_length_km": 16.2,
         "tariff_growth_rate": 3.98,
         "traffic_growth_rate": 0.78,
-        "capital_grant_schedule": [0, 0, 0, 0],
+        "capital_grant_schedule": [22000, 56000, 0, 0],
     },
     "agriculture": {
         # Farm / agribusiness; long harvest cycles, seasonal inventory, lower tax
@@ -902,8 +902,8 @@ def update_all_tabs(results):
     period = results.get("projection_years", 5)
     inv = results.get("investment_years", 0)
 
-    def tbl(items, tid):
-        return build_table(items, period, tid, investment_years=inv)
+    def tbl(items, tid, skip_sum=None):
+        return build_table(items, period, tid, investment_years=inv, skip_sum=skip_sum)
 
     # ── Revenues ──
     rev_items = {
@@ -986,7 +986,7 @@ def update_all_tabs(results):
         "Dividends (₽M)": results.get("dividends", []),
         "Cumulative Equity (₽M)": results.get("cumulative_equity", []),
     }
-    equity_tab = tab_layout(tbl(equity_items, "tbl-equity"), equity_chart(results))
+    equity_tab = tab_layout(tbl(equity_items, "tbl-equity", skip_sum={"Cumulative Equity (₽M)"}), equity_chart(results))
 
     # ── P&L ──
     pnl_items = {
@@ -1050,7 +1050,7 @@ def update_all_tabs(results):
         "Input VAT on Major Repairs (₽M)": _vat_in_repairs,
     }
     cf_tab = dbc.Container([
-        html.Div(tbl(cf_items, "tbl-cf"), className="mb-2"),
+        html.Div(tbl(cf_items, "tbl-cf", skip_sum={"Cash Balance (₽M)"}), className="mb-2"),
         dbc.Button(
             "▶ VAT CF Details",
             id="btn-vat-detail",
