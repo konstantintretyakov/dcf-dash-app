@@ -183,6 +183,42 @@ SPHERE_DEFAULTS = {
         "initial_cash": 0.01,
         "initial_investment": 0,
     },
+    "development": {
+        # Residential real-estate development project (multifamily / mid-rise).
+        # Short construction phase, sales tail through escrow, high COGS share,
+        # heavy project-finance debt and equity gap funding from the developer.
+        "repair_interval": 6,
+        "repair_cost": 0,
+        "repair_growth_rate": 4.1,
+        "shl_interest_rate": 13,
+        "vat_rate": 22,
+        "investment_years": 3,                # construction phase
+        "operating_years": 5,                 # sales + warranty tail
+        "base_revenue": 5000,                 # ₽M annual flat sales at peak
+        "revenue_growth_rate": 4,             # price indexation
+        "cogs_pct": 60,                       # CMR/EPC share of revenue
+        "opex_pct": 8,                        # sales, marketing, admin
+        "total_capex": 8000,                  # land + permits + on-site infra (₽M)
+        "capex_pct_schedule": [50, 30, 20],   # land/heavy work front-loaded
+        "intangibles_investment": 150,        # design, permits, IT (₽M)
+        "useful_life_years": 30,
+        "amortization_period": 15,
+        "dso": 0,                             # escrow release on delivery
+        "dpo": 30,
+        "dio": 0,
+        "tax_rate": 25,
+        "initial_debt": 5000,                 # project finance facility (₽M)
+        "interest_rate": 13,                  # construction loan
+        "repayment_type": "Sweep",
+        "new_debt_annual": 0,
+        "sweep_pct": 100,
+        "initial_equity": 1500,               # developer equity (₽M)
+        "annual_equity_injection": 0,
+        "dividends_pct": 30,
+        "wacc": 14,                           # equity-heavy, residential dev risk
+        "initial_cash": 100,
+        "initial_investment": 0,
+    },
     "port": {
         # Port / terminal; stable throughput fees; WACC reflects infrastructure risk
         "repair_interval": 6,
@@ -228,6 +264,7 @@ SPHERE_OPTIONS = [
     {"label": "🌾  Agriculture",  "value": "agriculture"},
     {"label": "⛏️  Mining",       "value": "mining"},
     {"label": "🚢  Port",         "value": "port"},
+    {"label": "🏘️  Development",  "value": "development"},
 ]
 
 
