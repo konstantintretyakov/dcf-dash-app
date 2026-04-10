@@ -967,7 +967,7 @@ def _tornado_ranges_table(results: dict):
     def _fmt_val(b, val):
         """Format a driver input value for display."""
         if b["mode"] == "pct":
-            return f"₽{val:,.2f}M"
+            return f"₽{val:,.0f}M"
         else:
             return f"{val:.2f}%"
 
@@ -982,16 +982,16 @@ def _tornado_ranges_table(results: dict):
     def _npv_badge(delta):
         color = "success" if delta >= 0 else "danger"
         sign  = "+" if delta >= 0 else ""
-        return dbc.Badge(f"{sign}₽{delta:,.1f}M", color=color,
-                         className="ms-1", style={"fontSize": "10px"})
+        return dbc.Badge(f"{sign}₽{delta:,.0f}M", color=color,
+                         className="ms-1", style={"fontSize": "13px"})
 
     def _scenario_cell(b, val, npv_delta):
         pct_str = _pct_change(b["base_val"], val)
         return html.Td([
             html.Span(_fmt_val(b, val),
-                      style={"fontSize": "10px", "color": "#555"}),
+                      style={"fontSize": "13px", "color": "#555"}),
             html.Span(f" ({pct_str})",
-                      style={"fontSize": "10px", "color": "#999",
+                      style={"fontSize": "13px", "color": "#999",
                              "fontStyle": "italic"}),
             html.Br(),
             _npv_badge(npv_delta),
@@ -999,10 +999,10 @@ def _tornado_ranges_table(results: dict):
                   "verticalAlign": "middle"})
 
     header = html.Thead(html.Tr([
-        html.Th("Driver",      style={"fontSize": "11px", "whiteSpace": "nowrap"}),
-        html.Th("Base",        style={"fontSize": "11px", "textAlign": "right"}),
-        html.Th("Low",         style={"fontSize": "11px", "textAlign": "right"}),
-        html.Th("High",        style={"fontSize": "11px", "textAlign": "right"}),
+        html.Th("Driver",      style={"fontSize": "14px", "whiteSpace": "nowrap"}),
+        html.Th("Base",        style={"fontSize": "14px", "textAlign": "right"}),
+        html.Th("Low",         style={"fontSize": "14px", "textAlign": "right"}),
+        html.Th("High",        style={"fontSize": "14px", "textAlign": "right"}),
     ]), style={"backgroundColor": "#2c3e50", "color": "white"})
 
     rows = []
@@ -1012,11 +1012,11 @@ def _tornado_ranges_table(results: dict):
 
         rows.append(html.Tr([
             html.Td(b["label"],
-                    style={"fontSize": "11px", "fontWeight": "600",
+                    style={"fontSize": "14px", "fontWeight": "600",
                            "whiteSpace": "nowrap", "paddingRight": "8px",
                            "verticalAlign": "middle"}),
             html.Td(_fmt_val(b, b["base_val"]),
-                    style={"fontSize": "11px", "textAlign": "right",
+                    style={"fontSize": "14px", "textAlign": "right",
                            "color": "#555", "whiteSpace": "nowrap",
                            "verticalAlign": "middle"}),
             _scenario_cell(b, b["low_val"],  low_delta),
@@ -1025,7 +1025,8 @@ def _tornado_ranges_table(results: dict):
 
     return dbc.Card([
         dbc.CardHeader(
-            html.Small("Tornado Driver Ranges", className="fw-bold text-primary"),
+            html.Span("Tornado Driver Ranges", className="fw-bold text-primary",
+                      style={"fontSize": "16px"}),
             style={"padding": "6px 12px"},
         ),
         dbc.CardBody(
@@ -1301,7 +1302,9 @@ def update_all_tabs(results):
         dbc.Col(dbc.Card([
             dbc.CardBody([
                 html.P("📐 Net Present Value", className="text-muted small mb-1"),
-                html.H3(fmt_currency(npv), className=f"fw-bold text-{npv_color} mb-0"),
+                html.H3(
+                    "N/A" if npv is None else f"{'-' if npv < 0 else ''}₽{abs(npv):,.0f}M",
+                    className=f"fw-bold text-{npv_color} mb-0"),
             ])
         ], className="shadow-sm text-center h-100"), md=3),
         dbc.Col(dbc.Card([

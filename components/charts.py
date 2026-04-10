@@ -440,7 +440,7 @@ def npv_sensitivity_chart(results: dict) -> go.Figure:
             [1.0, "#27ae60"],
         ],
         zmid=0,
-        text=[[f"{v:,.2f}" for v in row] for row in matrix],
+        text=[[f"{v:,.0f}" for v in row] for row in matrix],
         texttemplate="%{text}",
         textfont={"size": 10},
         colorbar=dict(title="NPV (₽M)"),
@@ -483,7 +483,7 @@ def tornado_chart(results: dict) -> go.Figure:
             inp = f"{b['low_val']:,.2f} {b['unit']}" if is_low else f"{b['high_val']:,.2f} {b['unit']}"
         else:
             inp = f"{b['low_val']:+.2f} {b['unit']}" if is_low else f"{b['high_val']:+.2f} {b['unit']}"
-        return f"{b['label']} ({direction}): {inp}<br>NPV: ₽{npv_val:,.1f}M"
+        return f"{b['label']} ({direction}): {inp}<br>NPV: ₽{npv_val:,.0f}M"
 
     hover_left  = [_hover(b, lefts[i],  low_npvs[i] <= high_npvs[i]) for i, b in enumerate(bars)]
     hover_right = [_hover(b, rights[i], low_npvs[i] >  high_npvs[i]) for i, b in enumerate(bars)]
@@ -499,7 +499,7 @@ def tornado_chart(results: dict) -> go.Figure:
         marker_color=RED_COLOR,
         hovertext=hover_left,
         hoverinfo="text",
-        text=[f"₽{lefts[i]:,.1f}M" for i in range(n)],
+        text=[f"₽{lefts[i]:,.0f}M" for i in range(n)],
         textposition="outside",
         textfont=dict(size=10),
     ))
@@ -514,7 +514,7 @@ def tornado_chart(results: dict) -> go.Figure:
         marker_color=GREEN_COLOR,
         hovertext=hover_right,
         hoverinfo="text",
-        text=[f"₽{rights[i]:,.1f}M" for i in range(n)],
+        text=[f"₽{rights[i]:,.0f}M" for i in range(n)],
         textposition="outside",
         textfont=dict(size=10),
     ))
@@ -525,7 +525,7 @@ def tornado_chart(results: dict) -> go.Figure:
         line_width=2,
         line_color=BLUE_COLORS[0],
         line_dash="dash",
-        annotation_text=f"Base NPV<br>₽{base_npv:,.1f}M",
+        annotation_text=f"Base NPV<br>₽{base_npv:,.0f}M",
         annotation_position="top",
         annotation_font=dict(size=10, color=BLUE_COLORS[0]),
     )
